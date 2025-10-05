@@ -357,6 +357,12 @@
     border-bottom: 2px solid #f1f5f9;
 }
 
+.daily-expenses-list-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
 .daily-expenses-list-title {
     font-size: 18px;
     font-weight: 700;
@@ -373,6 +379,13 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.daily-expenses-list-add-btn {
+    padding: 10px 20px;
+    font-size: 13px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(59, 130, 246, 0.25);
 }
 
 .daily-expenses-list-grid {

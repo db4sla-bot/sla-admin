@@ -274,7 +274,7 @@ const DailyExpenses = () => {
             Daily Expenses
           </h1>
         </div>
-        {/* <div className="daily-expenses-header-actions">
+        <div className="daily-expenses-header-actions">
           <button 
             className="daily-expenses-add-btn"
             onClick={() => {
@@ -292,7 +292,7 @@ const DailyExpenses = () => {
             <Plus style={{ width: "18px", height: "18px" }} />
             Add Expense
           </button>
-        </div> */}
+        </div>
       </div>
 
       <div className="daily-expenses-main-container">
@@ -411,12 +411,31 @@ const DailyExpenses = () => {
         {/* Expenses List */}
         <div className="daily-expenses-list-section">
           <div className="daily-expenses-list-header">
-            <h3 className="daily-expenses-list-title">
-              Expense Records - {getFilterLabel()}
-            </h3>
-            <div className="daily-expenses-list-count">
-              {filteredExpenses.length} {filteredExpenses.length === 1 ? 'record' : 'records'}
+            <div className="daily-expenses-list-left">
+              <h3 className="daily-expenses-list-title">
+                Expense Records - {getFilterLabel()}
+              </h3>
+              <div className="daily-expenses-list-count">
+                {filteredExpenses.length} {filteredExpenses.length === 1 ? 'record' : 'records'}
+              </div>
             </div>
+            <button 
+              className="daily-expenses-add-btn daily-expenses-list-add-btn"
+              onClick={() => {
+                setShowAddForm(true);
+                setEditingExpense(null);
+                setNewExpense({
+                  title: '',
+                  amount: '',
+                  category: '',
+                  description: '',
+                  date: new Date().toISOString().split('T')[0]
+                });
+              }}
+            >
+              <Plus style={{ width: "16px", height: "16px" }} />
+              Add Expense
+            </button>
           </div>
 
           {filteredExpenses.length === 0 ? (
