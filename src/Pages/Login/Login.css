@@ -1,0 +1,153 @@
+/* ---------------- General Container ---------------- */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+}
+
+/* ---------------- Card ---------------- */
+.login-card {
+  background: #fff;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  width: 400px;
+  max-width: 100%;
+  text-align: center;
+  position: relative;
+}
+
+/* ---------------- Logo ---------------- */
+.login-logo {
+  width: 70px;
+  height: 70px;
+  background: #e8f0fe;
+  border-radius: 50%;
+  margin: -70px auto 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo-text {
+  font-size: 28px;
+  font-weight: bold;
+  color: #2563eb;
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+/* ---------------- Title & Text ---------------- */
+.login-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.login-desc {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* ---------------- Form ---------------- */
+.login-form input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+}
+
+.login-form input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* ---------------- Button ---------------- */
+.login-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #0b7469, #077731);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+/* ---------------- Loader inside button ---------------- */
+.loader {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-top: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------- Error Message ---------------- */
+.error-text {
+  color: #e63946;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+/* ---------------- Responsive ---------------- */
+
+/* Tablets */
+@media (max-width: 768px) {
+  .login-card {
+    width: 90%;
+    padding: 30px 20px;
+  }
+  .login-title {
+    font-size: 20px;
+  }
+  .login-desc {
+    font-size: 13px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 25px 15px;
+    margin-top: 30px;
+  }
+  .login-logo {
+    width: 60px;
+    height: 60px;
+  }
+  .logo-text {
+    font-size: 24px;
+  }
+  .login-title {
+    font-size: 18px;
+  }
+  .login-desc {
+    font-size: 12px;
+  }
+}

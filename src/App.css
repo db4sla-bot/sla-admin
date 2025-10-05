@@ -1,0 +1,330 @@
+.sla-admin-layout-container {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+}
+
+.side-bar-menu-container {
+  width: 20%;
+  max-width: 20%;
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.6s ease;
+
+  .logo-container {
+    width: 100%;
+    height: 70px;
+    padding: 15px 30px;
+    border-bottom: 1px solid var(--border);
+
+    img {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .menu-items-container {
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 4px !important;
+    }
+
+    .dashboard-menu-con{
+      padding: 0 12px;
+    }
+
+    .dashboard-menu-item {
+      text-decoration: none;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      color: var(--txt-dark) !important;
+      font-size: 13px;
+      font-weight: 600;
+      column-gap: 12px;
+      padding: 8px 12px;
+      border-radius: 5px;
+
+      &.active {
+        background: var(--gray);
+      }
+
+      .id-icon {
+        width: 16px;
+      }
+
+      .icon-arrow {
+        width: 16px;
+        margin-left: auto;
+      }
+    }
+
+    .menu-item {
+      padding: 0 12px;
+      border: 0;
+
+      .accordion-button {
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        column-gap: 12px;
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--txt-dark);
+        border-radius: 5px;
+
+        .icon {
+          width: 16px;
+        }
+
+        .arrow {
+          width: 16px;
+          margin-left: auto;
+          transition: all 0.6s ease;
+        }
+
+        &::after {
+          display: none;
+        }
+      }
+
+      .accordion-button:not(.collapsed) {
+        box-shadow: none;
+        background: var(--white);
+      }
+
+      .accordion-button:focus {
+        box-shadow: none;
+      }
+
+      .accordion-button[aria-expanded="true"] {
+        background: linear-gradient(135deg, #0b7469, #077731);
+        color: var(--white);
+        .arrow {
+          transform: rotate(180deg);
+        }
+      }
+
+      .accordion-button[aria-expanded="false"] {
+        .arrow {
+          transform: rotate(0);
+        }
+      }
+
+      .accordion-body {
+        padding: 4px 0 4px 25px !important;
+
+        ul {
+          width: 100%;
+          height: fit-content;
+          margin: 0;
+          padding: 0;
+
+          li {
+            width: 100%;
+            height: fit-content;
+            list-style: none;
+
+            a {
+              text-decoration: none;
+              width: 100%;
+              height: fit-content;
+              display: flex;
+              color: var(--txt-dark) !important;
+              font-weight: 600;
+              font-size: 13px;
+              padding: 8px 10px;
+              border-radius: 5px;
+
+              &:hover {
+                background: var(--gray);
+              }
+
+              &.active {
+                background: var(--gray);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+  }
+
+  .user-login-details-main-container {
+    width: 100%;
+    height: 70px;
+    border-top: 1px solid var(--border);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .name-label {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0b7469, #077731);
+      color: var(--white);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      .icon {
+        width: 18px;
+        color: var(--white);
+      }
+    }
+
+    .logout-icon {
+      width: 18px;
+      cursor: pointer;
+    }
+  }
+}
+
+.main-region {
+  flex: 1;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  .top-bar-container {
+    width: 100%;
+    height: 70px;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 14px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    column-gap: 12px;
+
+    .hamburgerIcon {
+      width: 18px;
+    }
+
+    .breadcrumps-container {
+      width: fit-content;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      column-gap: 6px;
+
+      h1 {
+        font-weight: 600;
+        font-size: 15px;
+        margin: 0;
+        color: var(--txt-dark);
+      }
+
+      span {
+        font-size: 13px;
+        margin: 0;
+      }
+
+      a {
+        font-size: 13px;
+        margin: 0;
+        text-decoration: none;
+        color: var(--txt-dark) !important;
+      }
+
+      .arrow {
+        width: 12px;
+      }
+    }
+  }
+
+  .routes-main-container {
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+
+    &::-webkit-scrollbar {
+      width: 4px !important;
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .routes-main-container {
+    min-height: fit-content;
+  }
+}
+
+@media (max-width: 1024px) {
+  .side-bar-menu-container {
+    width: 90%;
+    min-width: 90%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: translateX(-100%);
+    z-index: 10;
+
+    &.active {
+      transform: translateX(0);
+    }
+
+    .logo-container {
+        img {
+          width: 70%;
+        }
+
+        .sidebaar-menu-close {
+          position: absolute;
+          top: 6px;
+          right: 6px;
+          width: 24px;
+          background: var(--gray);
+          height: 24px;
+          padding: 5px;
+          border-radius: 50%;
+        }
+    }
+  }
+}
+
+.loader-white {
+  width: 22px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: 
+    radial-gradient(farthest-side, #ffffff 94%, #0000) top/4px 4px no-repeat,
+    conic-gradient(#0000 30%, #ffffff);
+  -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 4px), #000 0);
+  animation: l13 1s infinite linear;
+}
+
+@keyframes l13 { 
+  100% { transform: rotate(1turn) }
+}
+
+/* HTML: <div class="loader"></div> */
+.main-loader {
+  width: 50px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: 
+    radial-gradient(farthest-side, #0b7469 94%,#0000) top/8px 8px no-repeat,
+    conic-gradient(#0000 30%, #0b7469);
+  -webkit-mask: radial-gradient(farthest-side,#0000 calc(100% - 8px),#000 0);
+  animation: l14 1s infinite linear;
+}
+@keyframes l14{ 
+  100%{transform: rotate(1turn)}
+}

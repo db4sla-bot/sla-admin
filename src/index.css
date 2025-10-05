@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+:root {
+  --gray: #ecedf4;
+  --dark-gray: #ced4da;
+  --border: #e5e7eb;
+  --txt-dark: #283c50;
+  --txt-light: #64748b;
+  --black: #000000;
+  --white: #ffffff;
+  --blue: #3454d1;
+  --green: #17c666;
+  --red: #ea4d4d;
+  --dark-green: #0b7469;
+  --light-green: #7fc8a6;
+  --green-darkish: #077731;
+  --gradient-bg: linear-gradient(135deg, #0b7469, #077731);
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: var(--gray) !important;
+  font-family: "Inter", sans-serif !important;
+}
+
+.size-d {
+  font-size: 13px;
+}
+
+.size-s {
+  font-size: 12px;
+}
+
+/* Font-weight utilities */
+.fw-100 { font-weight: 100; }
+.fw-200 { font-weight: 200; }
+.fw-300 { font-weight: 300; }
+.fw-400 { font-weight: 400; }
+.fw-500 { font-weight: 500; }
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+.fw-800 { font-weight: 800; }
+.fw-900 { font-weight: 900; }
+
+.dark-color {
+  color: var(--txt-dark);
+}
+
+.light-color {
+  color: var(--txt-light);
+}

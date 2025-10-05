@@ -1,0 +1,771 @@
+/* Materials Investment Styles */
+.materials-investment-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--txt-secondary);
+  font-size: 16px;
+  gap: 20px;
+}
+
+.materials-investment-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e7ff;
+  border-top: 4px solid var(--blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Header Actions */
+.materials-investment-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.materials-investment-filter-btn,
+.materials-investment-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: white;
+  color: var(--txt-dark);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.materials-investment-filter-btn:hover,
+.materials-investment-export-btn:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: #f8faff;
+}
+
+/* Main Container */
+.materials-investment-container {
+  padding: 24px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  box-sizing: border-box;
+}
+
+/* Form Section */
+.materials-investment-form-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.materials-investment-form-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.materials-investment-form-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--txt-dark);
+  margin: 0;
+}
+
+.materials-investment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.materials-investment-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.materials-investment-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.materials-investment-form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--txt-dark);
+}
+
+.materials-investment-form-input {
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.materials-investment-form-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Material Dropdown */
+.materials-investment-dropdown-container {
+  position: relative;
+}
+
+.materials-investment-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 48px;
+}
+
+.materials-investment-dropdown-header:hover,
+.materials-investment-dropdown-header.active {
+  border-color: var(--blue);
+}
+
+.materials-investment-dropdown-selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.materials-investment-selected-material {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.materials-investment-material-category {
+  font-size: 12px;
+  color: var(--txt-secondary);
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.materials-investment-dropdown-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--txt-secondary);
+}
+
+.materials-investment-dropdown-icon {
+  transition: transform 0.2s ease;
+}
+
+.materials-investment-dropdown-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.materials-investment-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid var(--blue);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 300px;
+  overflow: hidden;
+}
+
+.materials-investment-dropdown-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: #f8faff;
+}
+
+.materials-investment-dropdown-search input {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--txt-dark);
+}
+
+.materials-investment-dropdown-options {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.materials-investment-dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.materials-investment-dropdown-option:hover {
+  background: #f8faff;
+}
+
+.materials-investment-option-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.materials-investment-option-name {
+  font-weight: 500;
+  color: var(--txt-dark);
+}
+
+.materials-investment-option-category {
+  font-size: 12px;
+  color: var(--txt-secondary);
+}
+
+.materials-investment-dropdown-no-results {
+  padding: 20px;
+  text-align: center;
+  color: var(--txt-secondary);
+  font-style: italic;
+}
+
+/* Unit Cost Display */
+.materials-investment-unit-cost {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  color: #0369a1;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* Submit Button */
+.materials-investment-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.materials-investment-submit-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.materials-investment-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.materials-investment-btn-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Statistics Grid */
+.materials-investment-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.materials-investment-stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s ease;
+}
+
+.materials-investment-stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.materials-investment-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.materials-investment-stat-icon.total-investments {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.materials-investment-stat-icon.total-amount {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.materials-investment-stat-icon.unique-materials {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.materials-investment-stat-icon.monthly-amount {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.materials-investment-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.materials-investment-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--txt-dark);
+  line-height: 1;
+}
+
+.materials-investment-stat-label {
+  font-size: 14px;
+  color: var(--txt-secondary);
+  font-weight: 500;
+}
+
+/* Filters Section */
+.materials-investment-filters-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.materials-investment-filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.materials-investment-filters-header h3 {
+  margin: 0;
+  color: var(--txt-dark);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.materials-investment-filters-close {
+  padding: 8px;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--txt-secondary);
+  transition: all 0.2s ease;
+}
+
+.materials-investment-filters-close:hover {
+  background: #e2e8f0;
+  color: var(--txt-dark);
+}
+
+.materials-investment-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.materials-investment-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--txt-dark);
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.materials-investment-filter-option:hover {
+  border-color: var(--blue);
+  background: #f8faff;
+}
+
+.materials-investment-filter-option.active {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: white;
+}
+
+.materials-investment-filter-icon {
+  font-size: 16px;
+}
+
+.materials-investment-search-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.materials-investment-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 400px;
+}
+
+.materials-investment-search-wrapper svg {
+  color: var(--txt-secondary);
+}
+
+.materials-investment-search-input {
+  flex: 1;
+  padding: 12px 16px;
+  padding-left: 40px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.materials-investment-search-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.materials-investment-search-wrapper svg {
+  position: absolute;
+  left: 12px;
+  pointer-events: none;
+}
+
+/* List Section */
+.materials-investment-list-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.materials-investment-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  width: 100%;
+}
+
+.materials-investment-list-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.materials-investment-list-header-right {
+  display: flex;
+  align-items: center;
+}
+
+.materials-investment-list-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  color: var(--txt-dark);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.materials-investment-list-info {
+  color: var(--txt-secondary);
+  font-size: 14px;
+}
+
+.materials-investment-list-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: white;
+  color: var(--txt-dark);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.materials-investment-list-filter-btn:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: #f8faff;
+}
+
+/* Empty State */
+.materials-investment-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--txt-secondary);
+}
+
+.materials-investment-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.materials-investment-empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--txt-dark);
+  margin-bottom: 8px;
+}
+
+.materials-investment-empty-text {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Table */
+.materials-investment-table-container {
+  overflow-x: auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.materials-investment-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 800px; /* Ensure minimum table width for consistency */
+}
+
+.materials-investment-table th {
+  text-align: left;
+  padding: 12px 16px;
+  background: #f8faff;
+  color: var(--txt-dark);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.materials-investment-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.materials-investment-table tr:hover {
+  background: #f8faff;
+}
+
+/* Table Cell Styles */
+.materials-investment-date-info,
+.materials-investment-material-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.materials-investment-date-info svg,
+.materials-investment-material-info svg {
+  color: var(--txt-secondary);
+}
+
+.materials-investment-category-badge {
+  background: #f1f5f9;
+  color: var(--txt-dark);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.materials-investment-quantity-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.materials-investment-amount-value {
+  font-weight: 600;
+  color: #059669;
+}
+
+.materials-investment-unit-cost-value {
+  font-weight: 500;
+  color: var(--txt-dark);
+}
+
+.materials-investment-investor-name {
+  color: var(--txt-dark);
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .materials-investment-container {
+    padding: 16px;
+    gap: 24px;
+  }
+  
+  .materials-investment-form-section,
+  .materials-investment-list-section,
+  .materials-investment-filters-section {
+    padding: 16px;
+  }
+  
+  .materials-investment-form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .materials-investment-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .materials-investment-filters-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .materials-investment-header-actions {
+    flex-wrap: wrap;
+  }
+  
+  .materials-investment-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .materials-investment-list-header-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .materials-investment-list-filter-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .materials-investment-table-container {
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .materials-investment-filters-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .materials-investment-form-title {
+    font-size: 18px;
+  }
+  
+  .materials-investment-list-title {
+    font-size: 16px;
+  }
+  
+  .materials-investment-stat-value {
+    font-size: 20px;
+  }
+
+  .materials-investment-list-filter-btn {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+}
+
+/* Additional width consistency fixes */
+.materials-investment-form,
+.materials-investment-stats-grid,
+.materials-investment-filters-section,
+.materials-investment-list-section {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure dropdown doesn't overflow container */
+.materials-investment-dropdown-menu {
+  max-width: 100%;
+  box-sizing: border-box;
+}

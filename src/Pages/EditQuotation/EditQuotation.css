@@ -1,0 +1,111 @@
+/* Import all styles from AddQuotation */
+@import '../AddQuotation/AddQuotation.css';
+
+/* Additional styles specific to EditQuotation */
+.quotation-back-btn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  margin-right: 16px;
+}
+
+.quotation-back-btn:hover {
+  background: #4b5563;
+  transform: translateY(-1px);
+}
+
+.quotation-save-btn {
+  background: #059669;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: clamp(8px, 1.2vw, 10px) clamp(16px, 2.5vw, 20px);
+  font-size: clamp(12px, 1.5vw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 12px;
+}
+
+.quotation-save-btn:hover {
+  background: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.quotation-save-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.edit-quotation-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.edit-quotation-loader {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: edit-quotation-spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes edit-quotation-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Update breadcrumb container for better spacing */
+.quotation-breadcrumps-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.quotation-breadcrumps-container h1 {
+  margin: 0;
+}
+
+/* Mobile responsive for back button */
+@media (max-width: 768px) {
+  .quotation-breadcrumps-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .quotation-back-btn {
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+  
+  .quotation-actions-container {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  
+  .quotation-save-btn,
+  .quotation-template-btn {
+    width: 100%;
+    justify-content: center;
+    margin-right: 0;
+  }
+}

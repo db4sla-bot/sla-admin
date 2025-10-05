@@ -1,0 +1,324 @@
+.invoice-details-main-container {
+    background: var(--white);
+    border-radius: 18px;
+    padding: 32px 28px 28px 28px;
+    max-width: 900px;
+    margin: 32px auto;
+    box-shadow: 0 6px 32px rgba(59,130,246,0.08);
+    font-family: 'Inter', Arial, sans-serif;
+    position: relative;
+}
+
+.invoice-details-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.invoice-details-download-btn {
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
+}
+.invoice-details-download-btn:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+}
+.invoice-details-download-btn .loader-white {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #fff;
+    border-top: 2px solid var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
+}
+
+.invoice-details-preview-content {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.invoice-details-brand-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px dashed #e5e7eb;
+    padding-bottom: 18px;
+    margin-bottom: 18px;
+    gap: 18px;
+}
+
+.invoice-details-logo {
+    width: 120px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+
+.brand-info {
+    flex: 2;
+}
+
+.brand-name {
+    font-size: 32px;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 4px;
+}
+
+.brand-address,
+.brand-vat {
+    font-size: 14px;
+    color: var(--txt-light);
+    margin-bottom: 2px;
+}
+
+.invoice-info {
+    flex: 1;
+    text-align: right;
+}
+
+.invoice-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--blue);
+    margin-bottom: 8px;
+}
+
+.invoice-meta {
+    font-size: 14px;
+    color: var(--txt-dark);
+    line-height: 1.7;
+}
+
+.invoice-meta .blue {
+    color: var(--blue);
+    font-weight: 600;
+}
+
+.invoice-details-to-payment-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 32px;
+    margin-bottom: 18px;
+}
+
+.invoice-to,
+.payment-details {
+    flex: 1;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 14px;
+    color: var(--txt-dark);
+}
+
+.invoice-to h4,
+.payment-details h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.payment-details .blue {
+    color: var(--blue);
+    font-weight: 600;
+}
+
+.invoice-details-to-from-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 32px;
+    margin-bottom: 18px;
+}
+
+.invoice-from,
+.invoice-to {
+    flex: 1;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 14px;
+    color: var(--txt-dark);
+}
+
+.invoice-from h4,
+.invoice-to h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.invoice-details-to-from-row .invoice-from > div,
+.invoice-details-to-from-row .invoice-to > div {
+    font-size: 14px;
+    color: var(--txt-dark);
+    margin-bottom: 2px;
+    word-break: break-word;
+}
+.invoice-details-to-from-row .invoice-from b,
+.invoice-details-to-from-row .invoice-to b {
+    color: var(--blue);
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.invoice-details-items-table {
+    margin-top: 18px;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 18px;
+}
+
+.invoice-details-items-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.invoice-details-items-table th,
+.invoice-details-items-table td {
+    padding: 10px 8px;
+    font-size: 14px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: center;
+    min-width: 110px;
+    max-width: 180px;
+    word-break: break-word;
+    white-space: pre-line;
+    vertical-align: middle;
+}
+
+.invoice-details-items-table th {
+    font-weight: 700;
+    color: #222;
+    background: #f3f4f6;
+    text-align: center;
+}
+
+.invoice-details-items-table td {
+    font-size: 14px;
+    color: var(--txt-dark);
+    text-align: center;
+}
+
+.invoice-details-summary {
+    margin-top: 12px;
+    max-width: 350px;
+    margin-left: auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    padding: 16px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    margin-bottom: 8px;
+}
+
+.summary-row .bold {
+    font-weight: 700;
+}
+
+.summary-row .discount {
+    color: #17c666;
+    font-weight: 700;
+}
+
+.summary-row.grand {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--blue);
+    background: #f3f4f6;
+    border-radius: 6px;
+    padding: 8px 0;
+}
+
+.invoice-details-notes {
+    background: #fff7ed;
+    border: 1px dashed #fdba74;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 18px;
+    margin-bottom: 18px;
+}
+
+.notes-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f59e42;
+    margin-bottom: 6px;
+}
+
+.notes-content {
+    font-size: 13px;
+    color: #f59e42;
+}
+
+.invoice-details-terms-manager-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 18px;
+}
+
+.invoice-terms {
+    flex: 2;
+}
+
+.terms-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--txt-dark);
+    margin-bottom: 6px;
+}
+
+.terms-content {
+    font-size: 13px;
+    color: var(--txt-light);
+}
+
+.invoice-manager {
+    flex: 1;
+    text-align: right;
+}
+
+.manager-sign {
+    font-family: 'Dancing Script', cursive;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--txt-dark);
+}
+
+.manager-role {
+    font-size: 13px;
+    color: var(--txt-dark);
+    font-weight: 600;
+}
+
+.manager-date {
+    font-size: 12px;
+    color: var(--txt-light);
+}

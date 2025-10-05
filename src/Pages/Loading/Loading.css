@@ -1,0 +1,21 @@
+.loading-main-container {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 140px;
+    box-sizing: border-box;
+
+    img {
+        width: 100%;
+    }
+}
+
+@media (max-width: 1024px) {
+    .loading-main-container {
+        padding: 20px;
+    }
+}
