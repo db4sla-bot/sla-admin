@@ -29,6 +29,9 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     
+    <!-- PWA Debug Utilities (Development only) -->
+    <script src="/pwa-utils.js"></script>
+    
     <!-- PWA Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
@@ -36,6 +39,14 @@
           navigator.serviceWorker.register('/sw.js')
             .then(registration => {
               console.log('SW registered: ', registration);
+              
+              // Check for updates immediately
+              registration.update();
+              
+              // Set up periodic update checks
+              setInterval(() => {
+                registration.update();
+              }, 60000); // Check every minute
             })
             .catch(registrationError => {
               console.log('SW registration failed: ', registrationError);

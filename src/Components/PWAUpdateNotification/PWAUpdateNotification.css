@@ -1,0 +1,120 @@
+.pwa-update-banner {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  background: #ffffff;
+  border: 1px solid #e1e5e9;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.pwa-update-content {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  gap: 12px;
+}
+
+.pwa-update-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #f59e0b;
+  border-radius: 8px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.pwa-update-text {
+  flex: 1;
+}
+
+.pwa-update-text h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.pwa-update-text p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.pwa-update-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pwa-update-btn {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.pwa-update-btn:hover {
+  background: #d97706;
+}
+
+.pwa-dismiss-btn {
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.pwa-dismiss-btn:hover {
+  background: #f5f5f5;
+  color: #333;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .pwa-update-banner {
+    left: 10px;
+    right: 10px;
+    top: 10px;
+  }
+  
+  .pwa-update-content {
+    padding: 12px;
+  }
+  
+  .pwa-update-text h4 {
+    font-size: 15px;
+  }
+  
+  .pwa-update-text p {
+    font-size: 13px;
+  }
+}

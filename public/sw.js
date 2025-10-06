@@ -1,8 +1,6 @@
-const CACHE_NAME = 'sla-admin-v1';
+const CACHE_NAME = 'sla-admin-v2'; // Update version number when you make changes
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/manifest.json',
   '/fav.png'
 ];
@@ -18,19 +16,38 @@ self.addEventListener('install', event => {
   );
 });
 
-// Fetch event
+// Fetch event - Network first strategy for better updates
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Return cached version or fetch from network
-        if (response) {
+  // Skip caching for API calls and use network-first strategy for HTML
+  if (event.request.url.includes('/api/') || 
+      event.request.destination === 'document' ||
+      event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Cache successful responses
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone);
+            });
+          }
           return response;
-        }
-        return fetch(event.request);
-      }
-    )
-  );
+        })
+        .catch(() => {
+          // Fall back to cache if network fails
+          return caches.match(event.request);
+        })
+    );
+  } else {
+    // Use cache-first for static assets
+    event.respondWith(
+      caches.match(event.request)
+        .then(response => {
+          return response || fetch(event.request);
+        })
+    );
+  }
 });
 
 // Activate event
@@ -47,6 +64,13 @@ self.addEventListener('activate', event => {
       );
     })
   );
+});
+
+// Handle messages from clients
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Handle background sync (if needed)
