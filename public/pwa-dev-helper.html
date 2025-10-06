@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PWA Development Helper</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .button { background: #3454d1; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer; }
+        .button:hover { background: #2a45b8; }
+        .section { border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .log { background: #f5f5f5; padding: 10px; border-radius: 3px; font-family: monospace; min-height: 100px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 PWA Development Helper</h1>
+    
+    <div class="section">
+        <h3>Service Worker Management</h3>
+        <button class="button" onclick="enableServiceWorker()">Enable Service Worker</button>
+        <button class="button" onclick="disableServiceWorker()">Disable Service Worker</button>
+        <button class="button" onclick="clearAllData()">Clear All PWA Data</button>
+        <button class="button" onclick="checkStatus()">Check Status</button>
+    </div>
+
+    <div class="section">
+        <h3>Debug Log</h3>
+        <div id="log" class="log"></div>
+        <button class="button" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script>
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function enableServiceWorker() {
+            localStorage.setItem('force-sw', 'true');
+            log('✅ Service Worker enabled for development');
+            log('🔄 Please refresh the main app to activate');
+        }
+
+        async function disableServiceWorker() {
+            localStorage.removeItem('force-sw');
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                }
+            }
+            log('❌ Service Worker disabled and unregistered');
+            log('🔄 Please refresh the main app');
+        }
+
+        async function clearAllData() {
+            try {
+                // Clear caches
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+                log('🗑️ All caches cleared');
+
+                // Unregister service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(reg => reg.unregister()));
+                    log('🗑️ All service workers unregistered');
+                }
+
+                // Clear localStorage PWA settings
+                localStorage.removeItem('force-sw');
+                localStorage.removeItem('pwa-install-dismissed');
+                log('🗑️ PWA settings cleared');
+                
+                log('✅ All PWA data cleared successfully');
+                log('🔄 Please refresh the main app');
+            } catch (error) {
+                log('❌ Error clearing data: ' + error.message);
+            }
+        }
+
+        async function checkStatus() {
+            log('📊 Checking PWA Status...');
+            
+            // Check localStorage settings
+            const forceSW = localStorage.getItem('force-sw');
+            log(`🔧 Force Service Worker: ${forceSW || 'false'}`);
+            
+            // Check service worker registrations
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                log(`👷 Active Service Workers: ${registrations.length}`);
+                registrations.forEach((reg, index) => {
+                    log(`   ${index + 1}. ${reg.scope} - State: ${reg.active?.state || 'inactive'}`);
+                });
+            }
+            
+            // Check caches
+            const cacheNames = await caches.keys();
+            log(`💾 Available Caches: ${cacheNames.length}`);
+            cacheNames.forEach((name, index) => {
+                log(`   ${index + 1}. ${name}`);
+            });
+        }
+
+        // Initial status check
+        window.addEventListener('load', () => {
+            log('🚀 PWA Development Helper loaded');
+            checkStatus();
+        });
+    </script>
+</body>
+</html>

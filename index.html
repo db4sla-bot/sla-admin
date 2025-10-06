@@ -35,23 +35,33 @@
     <!-- PWA Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-              console.log('SW registered: ', registration);
-              
-              // Check for updates immediately
-              registration.update();
-              
-              // Set up periodic update checks
-              setInterval(() => {
-                registration.update();
-              }, 60000); // Check every minute
-            })
-            .catch(registrationError => {
-              console.log('SW registration failed: ', registrationError);
-            });
-        });
+        // Only register service worker in production or when explicitly requested
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const forceServiceWorker = localStorage.getItem('force-sw') === 'true';
+        
+        if (!isDevelopment || forceServiceWorker) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+              .then(registration => {
+                console.log('SW registered: ', registration);
+                
+                // Check for updates immediately (only in production)
+                if (!isDevelopment) {
+                  registration.update();
+                  
+                  // Set up periodic update checks
+                  setInterval(() => {
+                    registration.update();
+                  }, 60000); // Check every minute
+                }
+              })
+              .catch(registrationError => {
+                console.log('SW registration failed: ', registrationError);
+              });
+          });
+        } else {
+          console.log('Service Worker disabled in development. Set localStorage.setItem("force-sw", "true") to enable.');
+        }
       }
     </script>
   </body>
