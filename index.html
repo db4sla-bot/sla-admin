@@ -2,12 +2,46 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <!-- PWA Favicon -->
+    <link rel="icon" type="image/png" href="/fav.png" />
+    <link rel="apple-touch-icon" href="/fav.png" />
+    
+    <!-- PWA Meta Tags -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#3454d1" />
+    <meta name="description" content="SLA Admin Dashboard for managing employees, attendance, expenses and business operations" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- iOS PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SLA Admin" />
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#3454d1" />
+    <meta name="msapplication-TileImage" content="/fav.png" />
+    
     <title>SLA Admin</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('SW registered: ', registration);
+            })
+            .catch(registrationError => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

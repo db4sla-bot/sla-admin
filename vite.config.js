@@ -5,4 +5,14 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   envPrefix: ['VITE_', 'SLA_'], // Allow both VITE_ and SLA_ prefixed environment variables
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    minify: 'terser'
+  },
+  server: {
+    port: 3000,
+    open: true
+  }
 })

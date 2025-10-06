@@ -55,6 +55,7 @@ import Quotations from './Pages/Quotations/Quotations'
 import EditQuotation from './Pages/EditQuotation/EditQuotation'
 import AddAppointment from './Pages/AddAppointment/AddAppointment'
 import Appointments from './Pages/Appointments/Appointments'
+import PWAInstallPrompt from './Components/PWAInstallPrompt/PWAInstallPrompt'
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -263,6 +264,7 @@ const App = () => {
               </Routes>
             </div>
           </div>
+          <PWAInstallPrompt />
         </>
       ) : (
         <Login />
