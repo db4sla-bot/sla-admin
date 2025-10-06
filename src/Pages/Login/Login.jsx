@@ -25,7 +25,7 @@ const Login = () => {
 
       console.log("Logged in:", userCredential.user);
 
-      navigate("/");
+      navigate("/leads");
     } catch (err) {
       console.error(err.message);
       setError("Invalid email or password");
