@@ -1,29 +1,70 @@
 import React, { useState } from 'react'
 import './AddLeads.css'
 import Hamburger from '../../Components/Hamburger/Hamburger'
-import { Funnel, Mail, MapPin, Phone, User, UserPlus, Folder } from 'lucide-react'
+import { Funnel, MapPin, Phone, User, UserPlus, Folder, Target, MessageSquare, X } from 'lucide-react'
 import Dropdown from '../../Components/Dropdown/Dropdown'
-import { LeadStatus, LeadSource } from '../../SLAData'
+import { LeadStatus } from '../../SLAData'
 import { db } from '../../Firebase'
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { useAppContext } from '../../Context';
 
 const AddLeads = () => {
-  const { user, userDetails, userDetailsLoading } = useAppContext(); // Get user and employee details from context
-  const [lookingfor, setLookingFor] = useState('Looking For ?')
-  const [loading, setLoading] = useState(false); // 🔥 new state for loader
+  const { user, userDetails, userDetailsLoading } = useAppContext();
+  const [selectedServices, setSelectedServices] = useState([]) // Changed to array for multi-select
+  const [loading, setLoading] = useState(false);
+  
+  // New source dropdowns
+  const [selectedSource, setSelectedSource] = useState('Select Source')
+  const [selectedSubSource, setSelectedSubSource] = useState('Select Sub Source')
+  
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
-    mobilenumber: "",
+    phone: "",
     address: "",
     city: "",
     state: "",
     country: "India",
     status: "",
-    source: ""
+    details: ""
   });
+
+  // Source options
+  const sourceOptions = [
+    'Digital Marketing',
+    'Online',
+    'Offline Marketing',
+    'Reference',
+    'Marketing',
+    'Interior Designers',
+    'Builders',
+    'Engineers'
+  ];
+
+  // Sub source options
+  const subSourceOptions = [
+    'Instagram',
+    'Facebook',
+    'Google',
+    'Just Dial',
+    'Google Listing',
+    'Existing Customer',
+    'Friends',
+    'Marketers',
+    'Flex',
+    'Newspapers',
+    'Bike Stickers',
+    'Others'
+  ];
+
+  // Services options
+  const serviceOptions = [
+    'Invisible Grills',
+    'Mosquito Mesh',
+    'Cloth Hangers',
+    'Artificial Grass',
+    'Bird Spikes'
+  ];
 
   // input change
   const handleChange = (e) => {
@@ -35,39 +76,38 @@ const AddLeads = () => {
     setFormData({ ...formData, [field]: value });
   };
 
+  // Handle service selection (multi-select)
+  const handleServiceToggle = (service) => {
+    setSelectedServices(prev => {
+      if (prev.includes(service)) {
+        // Remove service if already selected
+        return prev.filter(s => s !== service);
+      } else {
+        // Add service if not selected
+        return [...prev, service];
+      }
+    });
+  };
+
+  // Remove individual service
+  const removeService = (serviceToRemove) => {
+    setSelectedServices(prev => prev.filter(s => s !== serviceToRemove));
+  };
+
+  // Clear all selected services
+  const clearAllServices = () => {
+    setSelectedServices([]);
+  };
+
   // validation
   const validateForm = () => {
     if (!formData.name.trim()) return "Name is required";
-    if (!formData.email.trim()) return "Email is required";
-    // Basic email format check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) return "Enter a valid email";
-    if (!formData.mobilenumber.trim()) return "Mobile number is required";
-    if (!/^\d{10}$/.test(formData.mobilenumber)) return "Enter a valid 10-digit mobile number";
-    if (lookingfor === "Looking For ?") return "Please select a required service";
-    return null; // valid
-  };
-
-  // Send email function
-  const sendEmail = async (emailData) => {
-    try {
-      const response = await fetch('http://localhost:5000/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailData),
-      });
-      
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-      return result;
-    } catch (error) {
-      console.error('Email sending failed:', error);
-      throw error;
-    }
+    if (!formData.phone.trim()) return "Phone number is required";
+    if (!/^\d{10}$/.test(formData.phone)) return "Enter a valid 10-digit phone number";
+    if (selectedServices.length === 0) return "Please select at least one service";
+    if (selectedSource === "Select Source") return "Please select a source";
+    if (selectedSubSource === "Select Sub Source") return "Please select a sub source";
+    return null;
   };
 
   // save lead
@@ -78,104 +118,41 @@ const AddLeads = () => {
       return;
     }
 
-    setLoading(true); // show loader
+    setLoading(true);
     try {
       const leadData = {
         ...formData,
-        requiredService: lookingfor,
+        requiredServices: selectedServices, // Changed to array
+        source: selectedSource,
+        subSource: selectedSubSource,
         createdAt: Timestamp.now(),
         createdBy: userDetails?.name || user?.email || 'Unknown User'
       };
       
-      // Save to Firebase first
+      // Save to Firebase
       await addDoc(collection(db, "Leads"), leadData);
       toast.success('Lead saved successfully');
-
-      // Prepare email content
-      const currentDate = new Date().toLocaleDateString('en-IN');
-      const currentTime = new Date().toLocaleTimeString('en-IN');
-      
-      // Email to the customer
-      const customerEmailData = {
-        to: user.email,
-        subject: "Lead saved Successfully - SLA Invisible Grills",
-        message: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #2c3e50;">Lead saved Successfully!</h2>
-            <p>Dear ${userDetails.name},</p>
-            
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <h3 style="color: #495057; margin-top: 0;">Lead Details:</h3>
-              <p><strong>Name:</strong> ${formData.name}</p>
-              <p><strong>Email:</strong> ${formData.email}</p>
-              <p><strong>Mobile:</strong> ${formData.mobilenumber}</p>
-              <p><strong>Service Required:</strong> ${lookingfor}</p>
-              <p><strong>Address:</strong> ${formData.address ? formData.address + ', ' : ''}${formData.city ? formData.city + ', ' : ''}${formData.state}</p>
-              <p><strong>Created By:</strong> ${userDetails?.name || user?.email || 'Unknown User'}</p>
-            </div>
-          </div>
-        `
-      };
-
-      // Email to company
-      const companyEmailData = {
-        to: "slainvisiblegrills@gmail.com",
-        subject: `New Lead: ${formData.name} - ${lookingfor}`,
-        message: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #e74c3c;">🔥 New Lead Alert!</h2>
-            <p>A new lead has been submitted on ${currentDate} at ${currentTime}</p>
-            
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <h3 style="color: #495057; margin-top: 0;">Lead Details:</h3>
-              <p><strong>Name:</strong> ${formData.name}</p>
-              <p><strong>Email:</strong> ${formData.email}</p>
-              <p><strong>Mobile:</strong> ${formData.mobilenumber}</p>
-              <p><strong>Service Required:</strong> ${lookingfor}</p>
-              <p><strong>Address:</strong> ${formData.address ? formData.address + ', ' : ''}${formData.city ? formData.city + ', ' : ''}${formData.state}, ${formData.country}</p>
-              <p><strong>Status:</strong> ${formData.status || 'Not Set'}</p>
-              <p><strong>Source:</strong> ${formData.source || 'Not Set'}</p>
-              <p><strong>Created By:</strong> ${userDetails?.name || user?.email || 'Unknown User'}</p>
-              <p><strong>Added by:</strong> ${userDetails ? `${userDetails.name} (${userDetails.email})` : user?.email || 'System'}</p>
-              ${userDetails ? `<p><strong>Employee Role:</strong> ${userDetails.role || 'Not specified'}</p>` : ''}
-            </div>
-            
-            <p style="color: #e74c3c;"><strong>Action Required:</strong> Please follow up with this lead as soon as possible.</p>
-          </div>
-        `
-      };
-
-      // Send emails (in parallel)
-      try {
-        await Promise.all([
-          sendEmail(customerEmailData),
-          sendEmail(companyEmailData)
-        ]);
-        toast.success('Emails sent successfully!');
-      } catch (emailError) {
-        toast.warning('Lead saved but email sending failed. Please check email configuration.');
-        console.error('Email error:', emailError);
-      }
 
       // Clear all form fields after successful save
       setFormData({
         name: "",
-        email: "",
-        mobilenumber: "",
+        phone: "",
         address: "",
         city: "",
         state: "",
         country: "India",
         status: "",
-        source: ""
+        details: ""
       });
-      setLookingFor("Looking For ?");
+      setSelectedServices([]);
+      setSelectedSource("Select Source");
+      setSelectedSubSource("Select Sub Source");
       
     } catch (err) {
       toast.error('Something went wrong. Try Again!');
       console.error('Save lead error:', err);
     } finally {
-      setLoading(false); // restore button state
+      setLoading(false);
     }
   };
 
@@ -197,7 +174,7 @@ const AddLeads = () => {
           <button 
             className="saveDetails-btn" 
             onClick={handleSaveLead} 
-            disabled={loading} // disable while loading
+            disabled={loading}
           >
             {loading ? (
               <>
@@ -215,56 +192,176 @@ const AddLeads = () => {
 
       <div className="add-leads-main-container">
         <div className="add-lead-content-main-con">
+          {/* Lead Status Section */}
           <h1 className="section-heading">Lead Status:</h1>
           <div className="leads-status-section-container">
             <Dropdown data={LeadStatus} label={'Status'} onSelect={(val) => handleDropdown("status", val)} />
-            <Dropdown data={LeadSource} label={'Source'} onSelect={(val) => handleDropdown("source", val)} />
           </div>
           <hr />
 
-          <h1 className="section-heading mb-5">Lead Info:</h1>
-          <div className="lead-info-details-main-container">
+          {/* Source Information Section */}
+          <h1 className="section-heading mb-5">Source Information:</h1>
+          <div className="source-info-container">
+            {/* Primary Source */}
+            <div className="input-container">
+              <p className="input-label">Source :</p>
+              <div className="input-con">
+                <div className="icon-con"><Target className="icon" /></div>
+                <div className="dropdown input-dropdown-container">
+                  <button className="btn btn-secondary dropdown-toggle dp-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    {selectedSource}
+                  </button>
+                  <ul className="dropdown-menu input-drop-con-list">
+                    {sourceOptions.map((source, index) => (
+                      <li key={index} onClick={() => setSelectedSource(source)}>
+                        {source}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub Source */}
+            <div className="input-container">
+              <p className="input-label">Sub Source :</p>
+              <div className="input-con">
+                <div className="icon-con"><Target className="icon" /></div>
+                <div className="dropdown input-dropdown-container">
+                  <button className="btn btn-secondary dropdown-toggle dp-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    {selectedSubSource}
+                  </button>
+                  <ul className="dropdown-menu input-drop-con-list">
+                    {subSourceOptions.map((subSource, index) => (
+                      <li key={index} onClick={() => setSelectedSubSource(subSource)}>
+                        {subSource}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Details */}
+            <div className="input-container">
+              <p className="input-label">Details :</p>
+              <div className="input-con">
+                <div className="icon-con"><MessageSquare className="icon" /></div>
+                <input 
+                  type="text" 
+                  name="details" 
+                  value={formData.details} 
+                  onChange={handleChange} 
+                  placeholder="Enter additional details" 
+                />
+              </div>
+            </div>
+
+            {/* Required Services - Multi Select */}
+            <div className="input-container">
+              <p className="input-label">Required services :</p>
+              <div className="input-con services-multi-select-container">
+                <div className="icon-con"><Folder className="icon" /></div>
+                <div className="services-select-wrapper">
+                  <div className="dropdown input-dropdown-container">
+                    <button 
+                      className="btn btn-secondary dropdown-toggle dp-btn services-dropdown-btn" 
+                      type="button" 
+                      data-bs-toggle="dropdown" 
+                      aria-expanded="false"
+                      data-count={selectedServices.length}
+                    >
+                      {selectedServices.length === 0 
+                        ? 'Select Required Services' 
+                        : selectedServices.length === 1
+                        ? `${selectedServices[0]}`
+                        : `${selectedServices.length} Services Selected`
+                      }
+                    </button>
+                    <ul className="dropdown-menu input-drop-con-list services-dropdown-list">
+                      <li className="services-dropdown-header">
+                        <span>📋 Available Services ({selectedServices.length}/{serviceOptions.length})</span>
+                        {selectedServices.length > 0 && (
+                          <button 
+                            type="button" 
+                            className="clear-all-services"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearAllServices();
+                            }}
+                          >
+                            Clear All
+                          </button>
+                        )}
+                      </li>
+                      {serviceOptions.map((service, index) => (
+                        <li 
+                          key={index} 
+                          className={`service-option ${selectedServices.includes(service) ? 'selected' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleServiceToggle(service);
+                          }}
+                        >
+                          {/* <input 
+                            type="checkbox" 
+                            checked={selectedServices.includes(service)}
+                            onChange={() => {}} // Controlled by parent click
+                            onClick={(e) => e.stopPropagation()}
+                          /> */}
+                          <span>{service}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Enhanced Selected Services Display */}
+            {selectedServices.length > 0 && (
+              <div className="selected-services-display">
+                <p className="input-label">Selected Services ({selectedServices.length}):</p>
+                <div className="selected-services-tags">
+                  {selectedServices.map((service, index) => (
+                    <span key={index} className="service-tag">
+                      {service}
+                      <button 
+                        type="button" 
+                        className="remove-service"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeService(service);
+                        }}
+                        title={`Remove ${service}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <hr />
+
+          {/* Customer Details Section */}
+          <h1 className="section-heading mb-5">Customer Details:</h1>
+          <div className="customer-details-container">
             <form>
               <div className="input-container">
                 <p className="input-label">Name :</p>
                 <div className="input-con">
                   <div className="icon-con"><User className="icon" /></div>
-                  <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Name" />
+                  <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Customer Name" />
                 </div>
               </div>
 
               <div className="input-container">
-                <p className="input-label">Email :</p>
-                <div className="input-con">
-                  <div className="icon-con"><Mail className="icon" /></div>
-                  <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" />
-                </div>
-              </div>
-
-              <div className="input-container">
-                <p className="input-label">Mobile number :</p>
+                <p className="input-label">Phone :</p>
                 <div className="input-con">
                   <div className="icon-con"><Phone className="icon" /></div>
-                  <input type="text" name="mobilenumber" value={formData.mobilenumber} onChange={handleChange} placeholder="Mobile number" />
-                </div>
-              </div>
-
-              <div className="input-container">
-                <p className="input-label">Required service :</p>
-                <div className="input-con">
-                  <div className="icon-con"><Folder className="icon" /></div>
-                  <div className="dropdown input-dropdown-container">
-                    <button className="btn btn-secondary dropdown-toggle dp-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                      {lookingfor}
-                    </button>
-                    <ul className="dropdown-menu input-drop-con-list">
-                      <li onClick={() => setLookingFor('Invisible Grills')}>Invisible Grills</li>
-                      <li onClick={() => setLookingFor('Mosquito Mesh')}>Mosquito Mesh</li>
-                      <li onClick={() => setLookingFor('Cloth Hangers')}>Cloth Hangers</li>
-                      <li onClick={() => setLookingFor('Artificial Grass')}>Artificial Grass</li>
-                      <li onClick={() => setLookingFor('Bird Spikes')}>Bird Spikes</li>
-                    </ul>
-                  </div>
+                  <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone Number" />
                 </div>
               </div>
 
