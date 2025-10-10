@@ -16,6 +16,7 @@ const MonthlyExpenses = () => {
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(true)
   const [employeesList, setEmployeesList] = useState([])
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
+  const [renderError, setRenderError] = useState(null)
 
   // Form state for new monthly expense
   const [newExpenseForm, setNewExpenseForm] = useState({
@@ -149,50 +150,108 @@ const MonthlyExpenses = () => {
   }
 
   const applyFiltersAndSearch = () => {
-    let filtered = [...monthlyExpensesList]
+    try {
+      let filtered = [...monthlyExpensesList]
 
-    // Filter by specific month
-    if (selectedMonth) {
-      filtered = filtered.filter(expense => {
-        const expenseMonth = expense.expenseMonth?.substring(5, 7) // Get MM part
-        return expenseMonth === selectedMonth
-      })
+      // Filter by specific month
+      if (selectedMonth) {
+        filtered = filtered.filter(expense => {
+          try {
+            const expenseMonth = expense?.expenseMonth
+            if (!expenseMonth || typeof expenseMonth !== 'string') return false
+            const monthPart = expenseMonth.substring(5, 7) // Get MM part
+            return monthPart === selectedMonth
+          } catch (error) {
+            console.warn('Error filtering by month:', error, expense)
+            return false
+          }
+        })
+      }
+
+      // Filter by year
+      if (selectedYear) {
+        filtered = filtered.filter(expense => {
+          try {
+            const expenseMonth = expense?.expenseMonth
+            if (!expenseMonth || typeof expenseMonth !== 'string') return false
+            const yearPart = expenseMonth.substring(0, 4) // Get YYYY part
+            return yearPart === selectedYear
+          } catch (error) {
+            console.warn('Error filtering by year:', error, expense)
+            return false
+          }
+        })
+      }
+
+      // Filter by category
+      if (selectedCategory !== 'all') {
+        filtered = filtered.filter(expense => {
+          try {
+            return expense?.expenseCategory === selectedCategory
+          } catch (error) {
+            console.warn('Error filtering by category:', error, expense)
+            return false
+          }
+        })
+      }
+
+      // Filter by employee
+      if (selectedEmployee !== 'all') {
+        filtered = filtered.filter(expense => {
+          try {
+            return expense?.expensedBy === selectedEmployee
+          } catch (error) {
+            console.warn('Error filtering by employee:', error, expense)
+            return false
+          }
+        })
+      }
+
+      // Search filter
+      if (searchTerm && searchTerm.trim()) {
+        const searchLower = searchTerm.toLowerCase().trim()
+        filtered = filtered.filter(expense => {
+          try {
+            if (!expense) return false
+            
+            const expenseName = expense.expenseName || ''
+            const expenseCategory = expense.expenseCategory || ''
+            const expensedBy = expense.expensedBy || ''
+            const expenseDescription = expense.expenseDescription || ''
+            
+            return (
+              expenseName.toLowerCase().includes(searchLower) ||
+              expenseCategory.toLowerCase().includes(searchLower) ||
+              expensedBy.toLowerCase().includes(searchLower) ||
+              expenseDescription.toLowerCase().includes(searchLower)
+            )
+          } catch (error) {
+            console.warn('Error in search filter:', error, expense)
+            return false
+          }
+        })
+      }
+
+      setFilteredExpensesList(filtered)
+      
+      // Calculate total with error handling
+      const total = filtered.reduce((sum, expense) => {
+        try {
+          const amount = expense?.expenseAmount
+          return sum + (typeof amount === 'number' ? amount : 0)
+        } catch (error) {
+          console.warn('Error calculating total:', error, expense)
+          return sum
+        }
+      }, 0)
+      
+      setTotalMonthlyAmount(total)
+    } catch (error) {
+      console.error('Error in applyFiltersAndSearch:', error)
+      // Set safe fallback values
+      setFilteredExpensesList([])
+      setTotalMonthlyAmount(0)
     }
-
-    // Filter by year
-    if (selectedYear) {
-      filtered = filtered.filter(expense => {
-        const expenseYear = expense.expenseMonth?.substring(0, 4) // Get YYYY part
-        return expenseYear === selectedYear
-      })
-    }
-
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(expense => expense.expenseCategory === selectedCategory)
-    }
-
-    // Filter by employee
-    if (selectedEmployee !== 'all') {
-      filtered = filtered.filter(expense => expense.expensedBy === selectedEmployee)
-    }
-
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase()
-      filtered = filtered.filter(expense => 
-        expense.expenseName.toLowerCase().includes(searchLower) ||
-        expense.expenseCategory.toLowerCase().includes(searchLower) ||
-        expense.expensedBy.toLowerCase().includes(searchLower) ||
-        (expense.expenseDescription && expense.expenseDescription.toLowerCase().includes(searchLower))
-      )
-    }
-
-    setFilteredExpensesList(filtered)
-    
-    // Calculate total
-    const total = filtered.reduce((sum, expense) => sum + (expense.expenseAmount || 0), 0)
-    setTotalMonthlyAmount(total)
   }
 
   const addNewExpense = async (e) => {
@@ -236,13 +295,28 @@ const MonthlyExpenses = () => {
   }
 
   const formatMonthDisplay = (monthString) => {
-    if (!monthString) return ''
-    const [year, month] = monthString.split('-')
-    const monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ]
-    return `${monthNames[parseInt(month) - 1]} ${year}`
+    try {
+      if (!monthString || typeof monthString !== 'string') return ''
+      
+      const parts = monthString.split('-')
+      if (parts.length !== 2) return monthString // Return as-is if format is unexpected
+      
+      const [year, month] = parts
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ]
+      
+      const monthIndex = parseInt(month) - 1
+      if (monthIndex < 0 || monthIndex >= monthNames.length) {
+        return monthString // Return as-is if month is invalid
+      }
+      
+      return `${monthNames[monthIndex]} ${year}`
+    } catch (error) {
+      console.warn('Error formatting month display:', error, monthString)
+      return monthString || ''
+    }
   }
 
   const getAvailableYears = () => {
@@ -274,6 +348,24 @@ const MonthlyExpenses = () => {
     ]
   }
 
+  const handleRenderError = (error, errorInfo) => {
+    console.error('Render error in MonthlyExpenses:', error, errorInfo)
+    setRenderError(error.message || 'An unexpected error occurred')
+  }
+
+  const resetError = () => {
+    setRenderError(null)
+    // Reset filters to default state
+    setSelectedMonth('')
+    setSelectedYear('')
+    setSelectedCategory('all')
+    setSelectedEmployee('all')
+    setSearchTerm('')
+    // Reapply filters safely
+    setFilteredExpensesList(monthlyExpensesList)
+    setTotalMonthlyAmount(monthlyExpensesList.reduce((sum, expense) => sum + (expense?.expenseAmount || 0), 0))
+  }
+
   if (isLoadingExpenses) {
     return (
       <div className="monthly-expenses-container">
@@ -285,9 +377,31 @@ const MonthlyExpenses = () => {
     )
   }
 
-  return (
-    <div className="monthly-expenses-container">
-      <div className="monthly-expenses-content">
+  if (renderError) {
+    return (
+      <div className="monthly-expenses-container">
+        <div className="monthly-loading-wrapper">
+          <div className="monthly-empty-icon">⚠️</div>
+          <h3 className="monthly-empty-title">Something went wrong</h3>
+          <p className="monthly-empty-message">
+            Error: {renderError}
+          </p>
+          <button 
+            className="monthly-submit-btn" 
+            onClick={resetError}
+            style={{ marginTop: '20px' }}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  try {
+    return (
+      <div className="monthly-expenses-container">
+        <div className="monthly-expenses-content">
         {/* Header Section */}
         <div className="monthly-header-section">
           <div className="monthly-header-info">
@@ -309,7 +423,13 @@ const MonthlyExpenses = () => {
               <select 
                 className="monthly-filter-select"
                 value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                onChange={(e) => {
+                  try {
+                    setSelectedMonth(e.target.value)
+                  } catch (error) {
+                    console.warn('Error setting selected month:', error)
+                  }
+                }}
               >
                 <option value="">All Months</option>
                 {getMonthOptions().map(month => (
@@ -326,7 +446,13 @@ const MonthlyExpenses = () => {
               <select 
                 className="monthly-filter-select"
                 value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
+                onChange={(e) => {
+                  try {
+                    setSelectedYear(e.target.value)
+                  } catch (error) {
+                    console.warn('Error setting selected year:', error)
+                  }
+                }}
               >
                 <option value="">All Years</option>
                 {getAvailableYears().map(year => (
@@ -343,7 +469,13 @@ const MonthlyExpenses = () => {
               <select 
                 className="monthly-filter-select"
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e) => {
+                  try {
+                    setSelectedCategory(e.target.value)
+                  } catch (error) {
+                    console.warn('Error setting selected category:', error)
+                  }
+                }}
               >
                 <option value="all">All Categories</option>
                 {expenseCategories.map(category => (
@@ -360,7 +492,13 @@ const MonthlyExpenses = () => {
               <select 
                 className="monthly-filter-select"
                 value={selectedEmployee}
-                onChange={(e) => setSelectedEmployee(e.target.value)}
+                onChange={(e) => {
+                  try {
+                    setSelectedEmployee(e.target.value)
+                  } catch (error) {
+                    console.warn('Error setting selected employee:', error)
+                  }
+                }}
                 disabled={isLoadingEmployees}
               >
                 <option value="all">
@@ -390,7 +528,13 @@ const MonthlyExpenses = () => {
                 className="monthly-search-input"
                 placeholder="Search by name, category, employee..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  try {
+                    setSearchTerm(e.target.value)
+                  } catch (error) {
+                    console.warn('Error setting search term:', error)
+                  }
+                }}
               />
             </div>
           </div>
@@ -410,29 +554,62 @@ const MonthlyExpenses = () => {
               </p>
             </div>
           ) : (
-            filteredExpensesList.map(expense => (
-              <div key={expense.id} className="monthly-expense-card">
-                <div className="monthly-card-header">
-                  <div className="monthly-category-icon">
-                    {categoryIcons[expense.expenseCategory]}
+            filteredExpensesList.map(expense => {
+              try {
+                // Validate expense data
+                if (!expense || !expense.id) {
+                  console.warn('Invalid expense data:', expense)
+                  return null
+                }
+
+                const expenseName = expense.expenseName || 'Unnamed Expense'
+                const expenseCategory = expense.expenseCategory || 'Other'
+                const expenseAmount = expense.expenseAmount || 0
+                const expenseDescription = expense.expenseDescription || ''
+                const expenseMonth = expense.expenseMonth || ''
+                const expensedBy = expense.expensedBy || 'Unknown'
+                const categoryIcon = categoryIcons[expenseCategory] || '📋'
+
+                return (
+                  <div key={expense.id} className="monthly-expense-card">
+                    <div className="monthly-card-header">
+                      <div className="monthly-category-icon">
+                        {categoryIcon}
+                      </div>
+                      <div className="monthly-expense-info">
+                        <h3 className="monthly-expense-name">{expenseName}</h3>
+                        <span className="monthly-expense-category">{expenseCategory}</span>
+                      </div>
+                      <div className="monthly-expense-amount">
+                        ₹{(typeof expenseAmount === 'number' ? expenseAmount : 0).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="monthly-card-body">
+                      {expenseDescription && (
+                        <p className="monthly-expense-description">{expenseDescription}</p>
+                      )}
+                      <div className="monthly-expense-meta">
+                        <span className="monthly-expense-month">{formatMonthDisplay(expenseMonth)}</span>
+                        <span className="monthly-expense-employee">👤 {expensedBy}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="monthly-expense-info">
-                    <h3 className="monthly-expense-name">{expense.expenseName}</h3>
-                    <span className="monthly-expense-category">{expense.expenseCategory}</span>
+                )
+              } catch (error) {
+                console.warn('Error rendering expense card:', error, expense)
+                return (
+                  <div key={expense?.id || Math.random()} className="monthly-expense-card">
+                    <div className="monthly-card-header">
+                      <div className="monthly-category-icon">⚠️</div>
+                      <div className="monthly-expense-info">
+                        <h3 className="monthly-expense-name">Error loading expense</h3>
+                        <span className="monthly-expense-category">Error</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="monthly-expense-amount">₹{expense.expenseAmount.toLocaleString()}</div>
-                </div>
-                <div className="monthly-card-body">
-                  {expense.expenseDescription && (
-                    <p className="monthly-expense-description">{expense.expenseDescription}</p>
-                  )}
-                  <div className="monthly-expense-meta">
-                    <span className="monthly-expense-month">{formatMonthDisplay(expense.expenseMonth)}</span>
-                    <span className="monthly-expense-employee">👤 {expense.expensedBy}</span>
-                  </div>
-                </div>
-              </div>
-            ))
+                )
+              }
+            }).filter(Boolean)
           )}
         </div>
 
@@ -580,6 +757,27 @@ const MonthlyExpenses = () => {
       </div>
     </div>
   )
+  } catch (error) {
+    handleRenderError(error, 'Component render error')
+    return (
+      <div className="monthly-expenses-container">
+        <div className="monthly-loading-wrapper">
+          <div className="monthly-empty-icon">⚠️</div>
+          <h3 className="monthly-empty-title">Something went wrong</h3>
+          <p className="monthly-empty-message">
+            Please try refreshing the page or contact support.
+          </p>
+          <button 
+            className="monthly-submit-btn" 
+            onClick={() => window.location.reload()}
+            style={{ marginTop: '20px' }}
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    )
+  }
 }
 
 export default MonthlyExpenses
