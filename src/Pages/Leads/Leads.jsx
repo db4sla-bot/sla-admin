@@ -14,6 +14,10 @@ const Leads = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [fromDateFilter, setFromDateFilter] = useState('') // New from date filter
+  const [toDateFilter, setToDateFilter] = useState('') // New to date filter
+  const [sourceFilter, setSourceFilter] = useState('') // New source filter
+  const [subSourceFilter, setSubSourceFilter] = useState('') // New sub source filter
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedLead, setSelectedLead] = useState(null)
   const [editFormData, setEditFormData] = useState({
@@ -82,7 +86,7 @@ const Leads = () => {
 
   useEffect(() => {
     applyFilters()
-  }, [searchTerm, statusFilter, leads])
+  }, [searchTerm, statusFilter, fromDateFilter, toDateFilter, sourceFilter, subSourceFilter, leads])
 
   const fetchLeads = async () => {
     try {
@@ -116,19 +120,71 @@ const Leads = () => {
   const applyFilters = () => {
     let filtered = [...leads]
 
-    // Search filter
+    // Search filter - now includes details field
     if (searchTerm) {
       filtered = filtered.filter(lead =>
         lead.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.phone?.includes(searchTerm) ||
         lead.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.city?.toLowerCase().includes(searchTerm.toLowerCase())
+        lead.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.details?.toLowerCase().includes(searchTerm.toLowerCase()) || // Added details search
+        lead.source?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.subSource?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
     // Status filter
     if (statusFilter) {
       filtered = filtered.filter(lead => lead.status === statusFilter)
+    }
+
+    // From date filter
+    if (fromDateFilter) {
+      filtered = filtered.filter(lead => {
+        if (!lead.createdAt) return false
+        
+        let leadDate;
+        if (lead.createdAt.toDate) {
+          leadDate = lead.createdAt.toDate();
+        } else if (typeof lead.createdAt === 'string') {
+          leadDate = new Date(lead.createdAt);
+        } else {
+          leadDate = new Date(lead.createdAt);
+        }
+        
+        const filterFromDate = new Date(fromDateFilter);
+        return leadDate >= filterFromDate;
+      });
+    }
+
+    // To date filter
+    if (toDateFilter) {
+      filtered = filtered.filter(lead => {
+        if (!lead.createdAt) return false
+        
+        let leadDate;
+        if (lead.createdAt.toDate) {
+          leadDate = lead.createdAt.toDate();
+        } else if (typeof lead.createdAt === 'string') {
+          leadDate = new Date(lead.createdAt);
+        } else {
+          leadDate = new Date(lead.createdAt);
+        }
+        
+        const filterToDate = new Date(toDateFilter);
+        filterToDate.setHours(23, 59, 59, 999); // End of day
+        return leadDate <= filterToDate;
+      });
+    }
+
+    // Source filter
+    if (sourceFilter) {
+      filtered = filtered.filter(lead => lead.source === sourceFilter)
+    }
+
+    // Sub source filter
+    if (subSourceFilter) {
+      filtered = filtered.filter(lead => lead.subSource === subSourceFilter)
     }
 
     setFilteredLeads(filtered)
@@ -142,9 +198,29 @@ const Leads = () => {
     setStatusFilter(e.target.value)
   }
 
+  const handleFromDateFilter = (e) => {
+    setFromDateFilter(e.target.value)
+  }
+
+  const handleToDateFilter = (e) => {
+    setToDateFilter(e.target.value)
+  }
+
+  const handleSourceFilter = (e) => {
+    setSourceFilter(e.target.value)
+  }
+
+  const handleSubSourceFilter = (e) => {
+    setSubSourceFilter(e.target.value)
+  }
+
   const clearFilters = () => {
     setSearchTerm('')
     setStatusFilter('')
+    setFromDateFilter('')
+    setToDateFilter('')
+    setSourceFilter('')
+    setSubSourceFilter('')
   }
 
   const handleEditLead = (lead) => {
@@ -287,7 +363,7 @@ const Leads = () => {
             <Search className="leads-search-icon" />
             <input
               type="text"
-              placeholder="Search by name, phone, address, or city..."
+              placeholder="Search by name, phone, address, city, details, source..."
               value={searchTerm}
               onChange={handleSearch}
               className="leads-search-input"
@@ -295,6 +371,58 @@ const Leads = () => {
           </div>
 
           <div className="leads-filter-row">
+            <div className="leads-date-filter-group">
+              <div className="leads-date-filter">
+                <Calendar className="leads-calendar-icon" />
+                <input
+                  type="date"
+                  value={fromDateFilter}
+                  onChange={handleFromDateFilter}
+                  className="leads-date-input"
+                  placeholder="From date"
+                />
+                <label className="leads-date-label">From</label>
+              </div>
+
+              <div className="leads-date-filter">
+                <Calendar className="leads-calendar-icon" />
+                <input
+                  type="date"
+                  value={toDateFilter}
+                  onChange={handleToDateFilter}
+                  className="leads-date-input"
+                  placeholder="To date"
+                />
+                <label className="leads-date-label">To</label>
+              </div>
+            </div>
+
+            <div className="leads-source-filter">
+              <select
+                value={sourceFilter}
+                onChange={handleSourceFilter}
+                className="leads-source-select"
+              >
+                <option value="">All Sources</option>
+                {sourceOptions.map(source => (
+                  <option key={source} value={source}>{source}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="leads-sub-source-filter">
+              <select
+                value={subSourceFilter}
+                onChange={handleSubSourceFilter}
+                className="leads-sub-source-select"
+              >
+                <option value="">All Sub Sources</option>
+                {subSourceOptions.map(subSource => (
+                  <option key={subSource} value={subSource}>{subSource}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="leads-status-filter">
               <select
                 value={statusFilter}
@@ -310,7 +438,7 @@ const Leads = () => {
 
             <button className="leads-clear-filters" onClick={clearFilters}>
               <Filter />
-              Clear Filters
+              Clear All Filters
             </button>
           </div>
         </div>
@@ -320,7 +448,7 @@ const Leads = () => {
           <p>
             Showing {filteredLeads.length} of {leads.length} leads
           </p>
-          {(searchTerm || statusFilter) && (
+          {(searchTerm || statusFilter || fromDateFilter || toDateFilter || sourceFilter || subSourceFilter) && (
             <p className="leads-filter-info">Filters applied</p>
           )}
         </div>
@@ -337,88 +465,116 @@ const Leads = () => {
                   <th>Services</th>
                   <th>Source</th>
                   <th>Follow Up</th>
+                  <th>Created Date</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredLeads.map((lead) => (
-                  <tr key={lead.id} className="leads-table-row">
-                    <td className="leads-customer">
-                      <div className="leads-customer-info">
-                        <span className="leads-customer-name">
-                          {lead.name || 'N/A'}
-                        </span>
-                        {lead.details && (
-                          <span className="leads-customer-email">
-                            {lead.details.length > 30 ? `${lead.details.substring(0, 30)}...` : lead.details}
+                {filteredLeads.map((lead) => {
+                  // Format creation date
+                  const formatCreatedDate = (createdAt) => {
+                    if (!createdAt) return 'N/A';
+                    
+                    let date;
+                    if (createdAt.toDate) {
+                      date = createdAt.toDate();
+                    } else if (typeof createdAt === 'string') {
+                      date = new Date(createdAt);
+                    } else {
+                      date = new Date(createdAt);
+                    }
+                    
+                    return date.toLocaleDateString('en-IN', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    });
+                  };
+
+                  return (
+                    <tr key={lead.id} className="leads-table-row">
+                      <td className="leads-customer">
+                        <div className="leads-customer-info">
+                          <span className="leads-customer-name">
+                            {lead.name || 'N/A'}
                           </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="leads-contact">
-                      <span className="leads-phone">
-                        {lead.phone || 'N/A'}
-                      </span>
-                    </td>
-                    <td className="leads-address">
-                      <div className="leads-address-info">
-                        {lead.address && (
-                          <span className="leads-address">
-                            {lead.address.length > 25 ? `${lead.address.substring(0, 25)}...` : lead.address}
-                          </span>
-                        )}
-                        <span className="leads-city-state">
-                          {lead.city && lead.state ? `${lead.city}, ${lead.state}` : 
-                           lead.city || lead.state || 'N/A'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="leads-services">
-                      <div className="leads-services-info">
-                        {lead.requiredServices && lead.requiredServices.length > 0 ? (
-                          lead.requiredServices.slice(0, 2).map((service, index) => (
-                            <span key={index} className="leads-service-tag">
-                              {service}
+                          {lead.details && (
+                            <span className="leads-customer-email">
+                              {lead.details.length > 30 ? `${lead.details.substring(0, 30)}...` : lead.details}
                             </span>
-                          ))
-                        ) : (
-                          <span className="leads-service-tag">N/A</span>
-                        )}
-                        {lead.requiredServices && lead.requiredServices.length > 2 && (
-                          <span className="leads-service-tag">+{lead.requiredServices.length - 2} more</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="leads-source">
-                      <div className="leads-source-info">
-                        <span className="leads-source">{lead.source || 'N/A'}</span>
-                        <span className="leads-sub-source">{lead.subSource || ''}</span>
-                      </div>
-                    </td>
-                    <td className="leads-followup">
-                      <span className="leads-followup-date">
-                        {formatDate(lead.followUpDate)}
-                      </span>
-                    </td>
-                    <td className="leads-status">
-                      <span className={`leads-status-badge ${getStatusClass(lead.status)}`}>
-                        {lead.status || 'New'}
-                      </span>
-                    </td>
-                    <td className="leads-actions">
-                      <div className="leads-action-buttons">
-                        <button
-                          className="leads-edit-btn"
-                          onClick={() => handleEditLead(lead)}
-                          title="Edit Lead"
-                        >
-                          <Edit />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          )}
+                        </div>
+                      </td>
+                      <td className="leads-contact">
+                        <span className="leads-phone">
+                          {lead.phone || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="leads-address">
+                        <div className="leads-address-info">
+                          {lead.address && (
+                            <span className="leads-address">
+                              {lead.address.length > 25 ? `${lead.address.substring(0, 25)}...` : lead.address}
+                            </span>
+                          )}
+                          <span className="leads-city-state">
+                            {lead.city && lead.state ? `${lead.city}, ${lead.state}` : 
+                             lead.city || lead.state || 'N/A'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="leads-services">
+                        <div className="leads-services-info">
+                          {lead.requiredServices && lead.requiredServices.length > 0 ? (
+                            lead.requiredServices.slice(0, 2).map((service, index) => (
+                              <span key={index} className="leads-service-tag">
+                                {service}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="leads-service-tag">N/A</span>
+                          )}
+                          {lead.requiredServices && lead.requiredServices.length > 2 && (
+                            <span className="leads-service-tag">+{lead.requiredServices.length - 2} more</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="leads-source">
+                        <div className="leads-source-info">
+                          <span className="leads-source">{lead.source || 'N/A'}</span>
+                          <span className="leads-sub-source">{lead.subSource || ''}</span>
+                        </div>
+                      </td>
+                      <td className="leads-followup">
+                        <span className="leads-followup-date">
+                          {formatDate(lead.followUpDate)}
+                        </span>
+                      </td>
+                      <td className="leads-created-date">
+                        <span className="leads-date" style={{fontSize: '12px'}}>
+                          {formatCreatedDate(lead.createdAt)}
+                        </span>
+                      </td>
+                      <td className="leads-status">
+                        <span className={`leads-status-badge ${getStatusClass(lead.status)}`}>
+                          {lead.status || 'New'}
+                        </span>
+                      </td>
+                      <td className="leads-actions">
+                        <div className="leads-action-buttons">
+                          <button
+                            className="leads-edit-btn"
+                            onClick={() => handleEditLead(lead)}
+                            title="Edit Lead"
+                          >
+                            <Edit />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           ) : (
@@ -426,11 +582,11 @@ const Leads = () => {
               <div className="leads-empty-icon">👥</div>
               <h3>No leads found</h3>
               <p>
-                {searchTerm || statusFilter
+                {searchTerm || statusFilter || fromDateFilter || toDateFilter || sourceFilter || subSourceFilter
                   ? "Try adjusting your search criteria or filters"
                   : "Start by adding your first lead"}
               </p>
-              {!searchTerm && !statusFilter && (
+              {!searchTerm && !statusFilter && !fromDateFilter && !toDateFilter && !sourceFilter && !subSourceFilter && (
                 <NavLink to="/addleads" className="leads-empty-add-btn">
                   <Plus /> Add New Lead
                 </NavLink>
