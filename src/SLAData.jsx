@@ -201,6 +201,11 @@ export const MenuItemsData = [
                     link: '/dailyexpenses'
                 },
                 {
+                    id: 'monthlyexpenses',
+                    label: 'Monthly Expenses',
+                    link: '/monthlyexpenses'
+                },
+                {
                     id: 'todolist',
                     label: 'Todo List',
                     link: '/todolist'

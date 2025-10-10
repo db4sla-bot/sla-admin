@@ -1,0 +1,572 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.monthly-expenses-container {
+  min-height: 100vh;
+  padding: 20px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.monthly-expenses-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Loading State */
+.monthly-loading-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  color: white;
+}
+
+.monthly-loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: monthly-spin 1s linear infinite;
+  margin-bottom: 24px;
+}
+
+.monthly-loading-text {
+  font-size: 1.1rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+@keyframes monthly-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Header Section */
+.monthly-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* background: linear-gradient(135deg, #667eea, #764ba2); */
+  background: var(--gradient-bg);
+  border-radius: 20px;
+  padding: 32px;
+  margin-bottom: 28px;
+  box-shadow: 0 15px 45px rgba(102, 126, 234, 0.2);
+  color: white;
+}
+
+.monthly-header-info {
+  flex: 1;
+}
+
+.monthly-page-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.monthly-page-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.monthly-total-card {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: 28px;
+  border-radius: 18px;
+  color: white;
+  min-width: 220px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.monthly-total-amount {
+  font-size: 2rem;
+  font-weight: 900;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.monthly-total-label {
+  font-size: 0.9rem;
+  opacity: 0.95;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Controls Section */
+.monthly-controls-section {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+  backdrop-filter: blur(20px);
+  border-radius: 18px;
+  padding: 28px;
+  margin-bottom: 28px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.monthly-filters-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.monthly-filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.monthly-filter-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.monthly-filter-select,
+.monthly-search-input {
+  padding: 14px 18px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  background: white;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.monthly-filter-select:focus,
+.monthly-search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+.monthly-search-input {
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23a0aec0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>') no-repeat right 18px center;
+  padding-right: 50px;
+}
+
+/* Expenses Grid */
+.monthly-expenses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 24px;
+  margin-bottom: 100px;
+}
+
+.monthly-expense-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+  backdrop-filter: blur(20px);
+  border-radius: 18px;
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.monthly-expense-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+.monthly-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.monthly-category-icon {
+  font-size: 2.5rem;
+  margin-right: 18px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.monthly-expense-info {
+  flex: 1;
+}
+
+.monthly-expense-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.monthly-expense-category {
+  display: inline-block;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #e6fffa, #b2f5ea);
+  color: #285e61;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.monthly-expense-amount {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #e53e3e;
+  text-align: right;
+}
+
+.monthly-card-body {
+  padding-top: 20px;
+  border-top: 2px solid #f7fafc;
+}
+
+.monthly-expense-description {
+  color: #718096;
+  line-height: 1.6;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+  font-style: italic;
+}
+
+.monthly-expense-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.monthly-expense-month {
+  font-size: 0.8rem;
+  color: #667eea;
+  font-weight: 600;
+  background: linear-gradient(135deg, #e6f3ff, #f0f8ff);
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid #b3d9ff;
+}
+
+.monthly-expense-employee {
+  font-size: 0.8rem;
+  color: #48bb78;
+  font-weight: 600;
+  background: linear-gradient(135deg, #e6fff2, #f0fff4);
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid #b3f5cc;
+}
+
+/* Empty State */
+.monthly-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 80px 40px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1);
+}
+
+.monthly-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 24px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.monthly-empty-title {
+  font-size: 1.6rem;
+  color: #2d3748;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.monthly-empty-message {
+  color: #718096;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Floating Add Button */
+.monthly-add-button {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 70px;
+  height: 70px;
+  /* background: linear-gradient(135deg, #667eea, #764ba2); */
+  background: var(--gradient-bg);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+.monthly-add-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 20px 50px rgba(102, 126, 234, 0.5);
+}
+
+.monthly-add-icon {
+  font-size: 2rem;
+  font-weight: 300;
+}
+
+/* Modal Styles */
+.monthly-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 24px;
+  animation: monthly-modal-fade 0.3s ease;
+}
+
+@keyframes monthly-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.monthly-modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  animation: monthly-modal-slide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes monthly-modal-slide {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.monthly-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #f7fafc;
+  background: var(--gradient-bg);
+  color: white;
+  border-radius: 16px 16px 0 0;
+}
+
+.monthly-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.monthly-modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  font-size: 1.5rem;
+  color: white;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.monthly-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+/* Form Styles */
+.monthly-expense-form {
+  padding: 20px;
+}
+
+.monthly-form-group {
+  margin-bottom: 16px;
+}
+
+.monthly-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.monthly-form-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #2d3748;
+  font-size: 0.875rem;
+}
+
+.monthly-form-input,
+.monthly-form-select,
+.monthly-form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: #f7fafc;
+  font-weight: 400;
+}
+
+.monthly-form-input:focus,
+.monthly-form-select:focus,
+.monthly-form-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+  background: white;
+}
+
+.monthly-form-textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.monthly-form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f7fafc;
+}
+
+.monthly-submit-btn,
+.monthly-cancel-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  min-width: 100px;
+}
+
+.monthly-submit-btn {
+  background: var(--gradient-bg);
+  color: white;
+}
+
+.monthly-submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(72, 187, 120, 0.25);
+}
+
+.monthly-cancel-btn {
+  background: #f7fafc;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+}
+
+.monthly-cancel-btn:hover {
+  background: #edf2f7;
+  border-color: #cbd5e0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .monthly-expenses-container {
+    padding: 16px;
+  }
+
+  .monthly-header-section {
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .monthly-page-title {
+    font-size: 1.8rem;
+  }
+
+  .monthly-total-card {
+    width: 100%;
+  }
+
+  .monthly-filters-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .monthly-expenses-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .monthly-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .monthly-form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .monthly-submit-btn,
+  .monthly-cancel-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .monthly-expense-card {
+    padding: 20px;
+  }
+
+  .monthly-card-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .monthly-expense-amount {
+    width: 100%;
+    text-align: left;
+    margin-top: 8px;
+  }
+
+  .monthly-modal-content {
+    margin: 12px;
+    max-width: none;
+  }
+
+  .monthly-modal-header,
+  .monthly-expense-form {
+    padding: 16px;
+  }
+}
