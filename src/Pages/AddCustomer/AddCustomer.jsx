@@ -10,7 +10,6 @@ const AddCustomer = () => {
   const [formData, setFormData] = useState({
     name: "",
     mobile: "",
-    email: "",
     address: "",
     state: "",
     city: "",
@@ -59,14 +58,15 @@ const AddCustomer = () => {
         lookingFor, // save lookingFor array
         work: [],
         materialUsed: [],
-        activity: []
+        activity: [],
+        createdAt: new Date().toISOString(), // Add created date
+        updatedAt: new Date().toISOString()
       });
       toast.success("Customer added successfully!");
       // Reset form
       setFormData({
         name: "",
         mobile: "",
-        email: "",
         address: "",
         state: "",
         city: "",
@@ -191,23 +191,6 @@ const AddCustomer = () => {
                   ))}
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Email */}
-          <div className="input-container">
-            <p className="input-label">Email :</p>
-            <div className="input-con">
-              <div className="icon-con">
-                <Mail className="icon" />
-              </div>
-              <input
-                type="email"
-                placeholder="Email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-              />
             </div>
           </div>
 
