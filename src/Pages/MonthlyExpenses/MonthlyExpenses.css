@@ -499,6 +499,40 @@
   border-color: #cbd5e0;
 }
 
+/* Edit Functionality */
+.monthly-card-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.monthly-edit-btn {
+  background: linear-gradient(135deg, #3182ce, #2c5282);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.monthly-edit-btn:hover {
+  background: linear-gradient(135deg, #2c5282, #2a4365);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
+}
+
+.monthly-edit-btn:active {
+  transform: translateY(0);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .monthly-expenses-container {
@@ -568,5 +602,15 @@
   .monthly-modal-header,
   .monthly-expense-form {
     padding: 16px;
+  }
+
+  .monthly-card-actions {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+
+  .monthly-edit-btn {
+    font-size: 0.8rem;
+    padding: 6px 12px;
   }
 }

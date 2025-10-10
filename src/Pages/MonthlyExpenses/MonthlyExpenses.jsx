@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { collection, addDoc, getDocs, query, orderBy, where } from 'firebase/firestore'
+import { collection, addDoc, getDocs, query, orderBy, where, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../Firebase'
 import './MonthlyExpenses.css'
 
@@ -13,6 +13,8 @@ const MonthlyExpenses = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [totalMonthlyAmount, setTotalMonthlyAmount] = useState(0)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingExpense, setEditingExpense] = useState(null)
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(true)
   const [employeesList, setEmployeesList] = useState([])
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
@@ -25,6 +27,16 @@ const MonthlyExpenses = () => {
     expenseCategory: 'DTH',
     expenseDescription: '',
     expenseMonth: new Date().toISOString().slice(0, 7), // YYYY-MM format
+    expensedBy: ''
+  })
+
+  // Form state for editing expense
+  const [editExpenseForm, setEditExpenseForm] = useState({
+    expenseName: '',
+    expenseAmount: '',
+    expenseCategory: 'DTH',
+    expenseDescription: '',
+    expenseMonth: new Date().toISOString().slice(0, 7),
     expensedBy: ''
   })
 
@@ -291,6 +303,70 @@ const MonthlyExpenses = () => {
     } catch (error) {
       console.error('Error adding expense:', error)
       alert('Error adding expense. Please try again.')
+    }
+  }
+
+  const openEditModal = (expense) => {
+    setEditingExpense(expense)
+    setEditExpenseForm({
+      expenseName: expense.expenseName || '',
+      expenseAmount: expense.expenseAmount?.toString() || '',
+      expenseCategory: expense.expenseCategory || 'DTH',
+      expenseDescription: expense.expenseDescription || '',
+      expenseMonth: expense.expenseMonth || new Date().toISOString().slice(0, 7),
+      expensedBy: expense.expensedBy || ''
+    })
+    setShowEditModal(true)
+  }
+
+  const closeEditModal = () => {
+    setShowEditModal(false)
+    setEditingExpense(null)
+    setEditExpenseForm({
+      expenseName: '',
+      expenseAmount: '',
+      expenseCategory: 'DTH',
+      expenseDescription: '',
+      expenseMonth: new Date().toISOString().slice(0, 7),
+      expensedBy: ''
+    })
+  }
+
+  const updateExpense = async (e) => {
+    e.preventDefault()
+    
+    if (!editExpenseForm.expenseName || !editExpenseForm.expenseAmount) {
+      alert('Please fill in required fields')
+      return
+    }
+
+    if (!editingExpense?.id) {
+      alert('Error: No expense selected for editing')
+      return
+    }
+
+    try {
+      const expenseData = {
+        expenseName: editExpenseForm.expenseName,
+        expenseAmount: parseFloat(editExpenseForm.expenseAmount),
+        expenseCategory: editExpenseForm.expenseCategory,
+        expenseDescription: editExpenseForm.expenseDescription,
+        expenseMonth: editExpenseForm.expenseMonth,
+        expensedBy: editExpenseForm.expensedBy,
+        updatedAt: new Date()
+      }
+
+      await updateDoc(doc(db, 'monthlyExpenses', editingExpense.id), expenseData)
+      
+      closeEditModal()
+      
+      // Reload expenses
+      await loadMonthlyExpenses()
+      
+      alert('Expense updated successfully!')
+    } catch (error) {
+      console.error('Error updating expense:', error)
+      alert('Error updating expense. Please try again.')
     }
   }
 
@@ -592,6 +668,15 @@ const MonthlyExpenses = () => {
                         <span className="monthly-expense-month">{formatMonthDisplay(expenseMonth)}</span>
                         <span className="monthly-expense-employee">👤 {expensedBy}</span>
                       </div>
+                      <div className="monthly-card-actions">
+                        <button 
+                          className="monthly-edit-btn"
+                          onClick={() => openEditModal(expense)}
+                          title="Edit expense"
+                        >
+                          ✏️ Edit
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )
@@ -620,6 +705,140 @@ const MonthlyExpenses = () => {
         >
           <span className="monthly-add-icon">+</span>
         </button>
+
+        {/* Edit Expense Modal */}
+        {showEditModal && editingExpense && (
+          <div className="monthly-modal-overlay" onClick={closeEditModal}>
+            <div className="monthly-modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="monthly-modal-header">
+                <h2 className="monthly-modal-title">Edit Monthly Expense</h2>
+                <button 
+                  className="monthly-modal-close"
+                  onClick={closeEditModal}
+                >
+                  ×
+                </button>
+              </div>
+              <form onSubmit={updateExpense} className="monthly-expense-form">
+                <div className="monthly-form-group">
+                  <label className="monthly-form-label">Expense Name *</label>
+                  <input
+                    type="text"
+                    className="monthly-form-input"
+                    value={editExpenseForm.expenseName}
+                    onChange={(e) => setEditExpenseForm({
+                      ...editExpenseForm,
+                      expenseName: e.target.value
+                    })}
+                    placeholder="Enter expense name"
+                    required
+                  />
+                </div>
+
+                <div className="monthly-form-row">
+                  <div className="monthly-form-group">
+                    <label className="monthly-form-label">Amount *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="monthly-form-input"
+                      value={editExpenseForm.expenseAmount}
+                      onChange={(e) => setEditExpenseForm({
+                        ...editExpenseForm,
+                        expenseAmount: e.target.value
+                      })}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  <div className="monthly-form-group">
+                    <label className="monthly-form-label">Category</label>
+                    <select
+                      className="monthly-form-select"
+                      value={editExpenseForm.expenseCategory}
+                      onChange={(e) => setEditExpenseForm({
+                        ...editExpenseForm,
+                        expenseCategory: e.target.value
+                      })}
+                    >
+                      {expenseCategories.map(category => (
+                        <option key={category} value={category}>
+                          {categoryIcons[category]} {category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="monthly-form-row">
+                  <div className="monthly-form-group">
+                    <label className="monthly-form-label">Month</label>
+                    <input
+                      type="month"
+                      className="monthly-form-input"
+                      value={editExpenseForm.expenseMonth}
+                      onChange={(e) => setEditExpenseForm({
+                        ...editExpenseForm,
+                        expenseMonth: e.target.value
+                      })}
+                    />
+                  </div>
+                  <div className="monthly-form-group">
+                    <label className="monthly-form-label">Expensed By</label>
+                    <select
+                      className="monthly-form-select"
+                      value={editExpenseForm.expensedBy}
+                      onChange={(e) => setEditExpenseForm({
+                        ...editExpenseForm,
+                        expensedBy: e.target.value
+                      })}
+                      disabled={isLoadingEmployees}
+                    >
+                      {isLoadingEmployees ? (
+                        <option value="">Loading employees...</option>
+                      ) : employeesList.length > 0 ? (
+                        employeesList.map(employee => (
+                          <option key={employee.id} value={employee.name}>
+                            👤 {employee.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">No employees found</option>
+                      )}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="monthly-form-group">
+                  <label className="monthly-form-label">Description</label>
+                  <textarea
+                    className="monthly-form-textarea"
+                    value={editExpenseForm.expenseDescription}
+                    onChange={(e) => setEditExpenseForm({
+                      ...editExpenseForm,
+                      expenseDescription: e.target.value
+                    })}
+                    placeholder="Enter description (optional)"
+                    rows="3"
+                  />
+                </div>
+
+                <div className="monthly-form-actions">
+                  <button 
+                    type="button" 
+                    className="monthly-cancel-btn"
+                    onClick={closeEditModal}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="monthly-submit-btn">
+                    Update Expense
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Add Expense Modal */}
         {showAddModal && (

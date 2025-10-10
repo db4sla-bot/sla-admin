@@ -652,9 +652,22 @@ const DailyExpenses = () => {
           ) : (
             <div className="daily-expenses-list-grid">
               {filteredExpenses.map((expense) => (
-                <div key={expense.id} className="daily-expenses-list-item">
+                <div key={expense.id} className={`daily-expenses-list-item ${editingExpense?.id === expense.id ? 'editing' : ''}`}>
                   <div className="daily-expenses-item-header">
-                    <div className="daily-expenses-item-title">{expense.title}</div>
+                    <div className="daily-expenses-item-title">
+                      {expense.title}
+                      {editingExpense?.id === expense.id ? (
+                        <span className="daily-expenses-editing-badge">Editing</span>
+                      ) : (
+                        <button 
+                          className="daily-expenses-quick-edit-btn"
+                          onClick={() => handleEditExpense(expense)}
+                          title="Quick Edit"
+                        >
+                          <Edit3 size={14} />
+                        </button>
+                      )}
+                    </div>
                     <div className="daily-expenses-item-amount">₹{expense.amount.toFixed(2)}</div>
                   </div>
                   
@@ -706,13 +719,19 @@ const DailyExpenses = () => {
       {/* Add/Edit Expense Modal */}
       {showAddForm && (
         <div className="daily-expenses-modal">
-          <div className="daily-expenses-modal-overlay" onClick={() => setShowAddForm(false)}></div>
+          <div className="daily-expenses-modal-overlay" onClick={() => {
+            setShowAddForm(false);
+            setEditingExpense(null);
+          }}></div>
           <div className="daily-expenses-modal-content">
             <div className="daily-expenses-modal-header">
               <h3>{editingExpense ? 'Edit Expense' : 'Add New Expense'}</h3>
               <button 
                 className="daily-expenses-modal-close"
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  setShowAddForm(false);
+                  setEditingExpense(null);
+                }}
               >
                 ×
               </button>
@@ -794,7 +813,10 @@ const DailyExpenses = () => {
                 <button 
                   type="button" 
                   className="daily-expenses-cancel-btn"
-                  onClick={() => setShowAddForm(false)}
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setEditingExpense(null);
+                  }}
                   disabled={saving}
                 >
                   Cancel
