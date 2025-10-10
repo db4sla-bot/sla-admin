@@ -157,6 +157,85 @@
     gap: 24px;
 }
 
+/* Custom Date Range Filter */
+.daily-expenses-custom-date-section {
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+.daily-expenses-date-range-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.daily-expenses-date-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.daily-expenses-date-input-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--txt-dark);
+}
+
+.daily-expenses-date-input {
+    height: 44px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
+    background: white;
+    color: var(--txt-dark);
+    transition: all 0.3s ease;
+}
+
+.daily-expenses-date-input:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Employee Filter */
+.daily-expenses-employee-filter {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+.daily-expenses-employee-select {
+    width: 100%;
+    height: 48px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0 16px;
+    font-size: 15px;
+    font-weight: 500;
+    background: white;
+    color: var(--txt-dark);
+    transition: all 0.3s ease;
+    margin-top: 12px;
+}
+
+.daily-expenses-employee-select:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+}
+
+.daily-expenses-employee-select:disabled {
+    background: #f1f5f9;
+    color: var(--txt-light);
+    cursor: not-allowed;
+}
+
 .daily-expenses-filters-container {
     display: flex;
     flex-direction: column;
@@ -473,6 +552,29 @@
     color: var(--txt-light);
     margin-bottom: 16px;
     line-height: 1.4;
+}
+
+.daily-expenses-item-employee {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: #e0f2fe;
+    border-radius: 8px;
+    border: 1px solid #b3e5fc;
+}
+
+.daily-expenses-employee-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0277bd;
+}
+
+.daily-expenses-employee-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #01579b;
 }
 
 .daily-expenses-item-actions {
@@ -845,6 +947,15 @@
 
     .daily-expenses-stat-value {
         font-size: 24px;
+    }
+
+    .daily-expenses-date-range-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .daily-expenses-custom-date-section,
+    .daily-expenses-employee-filter {
+        padding: 16px;
     }
 }
 

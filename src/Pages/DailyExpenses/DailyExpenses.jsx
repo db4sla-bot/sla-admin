@@ -28,25 +28,36 @@ const DailyExpenses = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [employeesList, setEmployeesList] = useState([]);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
+  const [selectedEmployee, setSelectedEmployee] = useState('all');
+  const [customDateRange, setCustomDateRange] = useState({
+    startDate: '',
+    endDate: ''
+  });
+  const [showCustomDateFilter, setShowCustomDateFilter] = useState(false);
 
   const [newExpense, setNewExpense] = useState({
     title: '',
     amount: '',
     category: '',
     description: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    expensedBy: ''
   });
 
   const categories = [
-    'Food & Dining',
+    'Cafe',
     'Transportation',
-    'Office Supplies',
-    'Utilities',
-    'Marketing',
     'Equipment',
-    'Travel',
+    'Kirana',
+    'Health',
+    'Food',
+    'Petrol',
     'Entertainment',
-    'Healthcare',
+    'Auto',
+    'Parties',
+    'Advance',
     'Miscellaneous'
   ];
 
@@ -58,16 +69,77 @@ const DailyExpenses = () => {
     { id: 'this-month', label: 'This Month', icon: '🗓️' },
     { id: 'last-month', label: 'Last Month', icon: '📋' },
     { id: 'this-year', label: 'This Year', icon: '🎯' },
-    { id: 'last-year', label: 'Last Year', icon: '📊' }
+    { id: 'last-year', label: 'Last Year', icon: '📊' },
+    { id: 'custom', label: 'Custom Range', icon: '📊' }
   ];
 
   useEffect(() => {
     fetchExpenses();
+    loadEmployees();
   }, []);
 
   useEffect(() => {
     applyFilters();
-  }, [expenses, activeFilter, searchTerm]);
+  }, [expenses, activeFilter, searchTerm, selectedEmployee, customDateRange]);
+
+  const loadEmployees = async () => {
+    try {
+      setIsLoadingEmployees(true);
+      const employeesQuery = collection(db, 'Employees');
+      const querySnapshot = await getDocs(employeesQuery);
+      
+      const employees = [];
+      querySnapshot.forEach((doc) => {
+        const employeeData = doc.data();
+        
+        // Try multiple possible field names for employee name
+        const employeeName = 
+          employeeData.employeeName || 
+          employeeData.name || 
+          employeeData.fullName || 
+          employeeData.firstName || 
+          employeeData.empName ||
+          `Employee ${doc.id}`;
+        
+        employees.push({
+          id: doc.id,
+          name: employeeName,
+          ...employeeData
+        });
+      });
+      
+      // Sort employees by name
+      employees.sort((a, b) => a.name.localeCompare(b.name));
+      
+      setEmployeesList(employees);
+      
+      // Set default employee for form if employees are loaded
+      if (employees.length > 0 && !newExpense.expensedBy) {
+        setNewExpense(prev => ({
+          ...prev,
+          expensedBy: employees[0].name
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading employees:', error);
+      
+      // Fallback to a default employee list if Firebase fails
+      const fallbackEmployees = [
+        { id: 'fallback-1', name: 'Admin User' },
+        { id: 'fallback-2', name: 'Default Employee' }
+      ];
+      setEmployeesList(fallbackEmployees);
+      
+      if (!newExpense.expensedBy) {
+        setNewExpense(prev => ({
+          ...prev,
+          expensedBy: fallbackEmployees[0].name
+        }));
+      }
+    } finally {
+      setIsLoadingEmployees(false);
+    }
+  };
 
   // ✅ ALREADY WORKING - Fetching from Firebase
   const fetchExpenses = async () => {
@@ -89,71 +161,117 @@ const DailyExpenses = () => {
   };
 
   const applyFilters = () => {
-    let filtered = [...expenses];
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    try {
+      let filtered = [...expenses];
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Apply date filter
-    filtered = filtered.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      const expenseDateOnly = new Date(expenseDate.getFullYear(), expenseDate.getMonth(), expenseDate.getDate());
+      // Apply date filter
+      filtered = filtered.filter(expense => {
+        try {
+          const expenseDate = new Date(expense.date);
+          const expenseDateOnly = new Date(expenseDate.getFullYear(), expenseDate.getMonth(), expenseDate.getDate());
 
-      switch (activeFilter) {
-        case 'today':
-          return expenseDateOnly.getTime() === today.getTime();
-        
-        case 'yesterday':
-          const yesterday = new Date(today);
-          yesterday.setDate(yesterday.getDate() - 1);
-          return expenseDateOnly.getTime() === yesterday.getTime();
-        
-        case 'this-week':
-          const weekStart = new Date(today);
-          weekStart.setDate(today.getDate() - today.getDay());
-          return expenseDateOnly >= weekStart && expenseDateOnly <= today;
-        
-        case 'last-week':
-          const lastWeekStart = new Date(today);
-          lastWeekStart.setDate(today.getDate() - today.getDay() - 7);
-          const lastWeekEnd = new Date(lastWeekStart);
-          lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
-          return expenseDateOnly >= lastWeekStart && expenseDateOnly <= lastWeekEnd;
-        
-        case 'this-month':
-          return expenseDate.getMonth() === now.getMonth() && expenseDate.getFullYear() === now.getFullYear();
-        
-        case 'last-month':
-          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          return expenseDate.getMonth() === lastMonth.getMonth() && expenseDate.getFullYear() === lastMonth.getFullYear();
-        
-        case 'this-year':
-          return expenseDate.getFullYear() === now.getFullYear();
-        
-        case 'last-year':
-          return expenseDate.getFullYear() === now.getFullYear() - 1;
-        
-        default:
-          return true;
+          switch (activeFilter) {
+            case 'today':
+              return expenseDateOnly.getTime() === today.getTime();
+            
+            case 'yesterday':
+              const yesterday = new Date(today);
+              yesterday.setDate(yesterday.getDate() - 1);
+              return expenseDateOnly.getTime() === yesterday.getTime();
+            
+            case 'this-week':
+              const weekStart = new Date(today);
+              weekStart.setDate(today.getDate() - today.getDay());
+              return expenseDateOnly >= weekStart && expenseDateOnly <= today;
+            
+            case 'last-week':
+              const lastWeekStart = new Date(today);
+              lastWeekStart.setDate(today.getDate() - today.getDay() - 7);
+              const lastWeekEnd = new Date(lastWeekStart);
+              lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
+              return expenseDateOnly >= lastWeekStart && expenseDateOnly <= lastWeekEnd;
+            
+            case 'this-month':
+              return expenseDate.getMonth() === now.getMonth() && expenseDate.getFullYear() === now.getFullYear();
+            
+            case 'last-month':
+              const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+              return expenseDate.getMonth() === lastMonth.getMonth() && expenseDate.getFullYear() === lastMonth.getFullYear();
+            
+            case 'this-year':
+              return expenseDate.getFullYear() === now.getFullYear();
+            
+            case 'last-year':
+              return expenseDate.getFullYear() === now.getFullYear() - 1;
+            
+            case 'custom':
+              if (customDateRange.startDate && customDateRange.endDate) {
+                const startDate = new Date(customDateRange.startDate);
+                const endDate = new Date(customDateRange.endDate);
+                return expenseDateOnly >= startDate && expenseDateOnly <= endDate;
+              }
+              return true;
+            
+            default:
+              return true;
+          }
+        } catch (error) {
+          console.warn('Error filtering by date:', error, expense);
+          return false;
+        }
+      });
+
+      // Apply employee filter
+      if (selectedEmployee !== 'all') {
+        filtered = filtered.filter(expense => {
+          try {
+            return expense?.expensedBy === selectedEmployee;
+          } catch (error) {
+            console.warn('Error filtering by employee:', error, expense);
+            return false;
+          }
+        });
       }
-    });
 
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(expense =>
-        expense.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expense.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expense.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      // Apply search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase().trim();
+        filtered = filtered.filter(expense => {
+          try {
+            if (!expense) return false;
+            
+            const title = expense.title || '';
+            const category = expense.category || '';
+            const description = expense.description || '';
+            const expensedBy = expense.expensedBy || '';
+            
+            return (
+              title.toLowerCase().includes(searchLower) ||
+              category.toLowerCase().includes(searchLower) ||
+              description.toLowerCase().includes(searchLower) ||
+              expensedBy.toLowerCase().includes(searchLower)
+            );
+          } catch (error) {
+            console.warn('Error in search filter:', error, expense);
+            return false;
+          }
+        });
+      }
+
+      setFilteredExpenses(filtered);
+    } catch (error) {
+      console.error('Error in applyFilters:', error);
+      setFilteredExpenses([]);
     }
-
-    setFilteredExpenses(filtered);
   };
 
   // ✅ ALREADY WORKING - Saving to Firebase
   const handleAddExpense = async (e) => {
     e.preventDefault();
     
-    if (!newExpense.title || !newExpense.amount || !newExpense.category) {
+    if (!newExpense.title || !newExpense.amount || !newExpense.category || !newExpense.expensedBy) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -182,7 +300,8 @@ const DailyExpenses = () => {
         amount: '',
         category: '',
         description: '',
-        date: new Date().toISOString().split('T')[0]
+        date: new Date().toISOString().split('T')[0],
+        expensedBy: employeesList.length > 0 ? employeesList[0].name : ''
       });
       setShowAddForm(false);
       setEditingExpense(null);
@@ -200,7 +319,8 @@ const DailyExpenses = () => {
       amount: expense.amount.toString(),
       category: expense.category,
       description: expense.description || '',
-      date: expense.date
+      date: expense.date,
+      expensedBy: expense.expensedBy || (employeesList.length > 0 ? employeesList[0].name : '')
     });
     setEditingExpense(expense);
     setShowAddForm(true);
@@ -285,7 +405,8 @@ const DailyExpenses = () => {
                 amount: '',
                 category: '',
                 description: '',
-                date: new Date().toISOString().split('T')[0]
+                date: new Date().toISOString().split('T')[0],
+                expensedBy: employeesList.length > 0 ? employeesList[0].name : ''
               });
             }}
           >
@@ -382,6 +503,73 @@ const DailyExpenses = () => {
               />
             </div>
           </div>
+
+          {/* Custom Date Range Filter */}
+          {activeFilter === 'custom' && (
+            <div className="daily-expenses-custom-date-section">
+              <div className="daily-expenses-filters-label">
+                <Calendar size={18} />
+                Custom Date Range:
+              </div>
+              <div className="daily-expenses-date-range-grid">
+                <div className="daily-expenses-date-input-group">
+                  <label>From Date:</label>
+                  <input
+                    type="date"
+                    className="daily-expenses-date-input"
+                    value={customDateRange.startDate}
+                    onChange={(e) => setCustomDateRange(prev => ({
+                      ...prev,
+                      startDate: e.target.value
+                    }))}
+                  />
+                </div>
+                <div className="daily-expenses-date-input-group">
+                  <label>To Date:</label>
+                  <input
+                    type="date"
+                    className="daily-expenses-date-input"
+                    value={customDateRange.endDate}
+                    onChange={(e) => setCustomDateRange(prev => ({
+                      ...prev,
+                      endDate: e.target.value
+                    }))}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Employee Filter */}
+          <div className="daily-expenses-employee-filter">
+            <div className="daily-expenses-filters-label">
+              <Filter size={18} />
+              Filter by Employee:
+            </div>
+            <select 
+              className="daily-expenses-employee-select"
+              value={selectedEmployee}
+              onChange={(e) => setSelectedEmployee(e.target.value)}
+              disabled={isLoadingEmployees}
+            >
+              <option value="all">
+                {isLoadingEmployees ? 'Loading employees...' : `All Employees (${employeesList.length})`}
+              </option>
+              {employeesList.length > 0 ? (
+                employeesList.map(employee => (
+                  <option key={employee.id} value={employee.name}>
+                    👤 {employee.name}
+                  </option>
+                ))
+              ) : (
+                !isLoadingEmployees && (
+                  <option value="" disabled>
+                    No employees found
+                  </option>
+                )
+              )}
+            </select>
+          </div>
         </div>
 
         {/* Top Categories */}
@@ -429,7 +617,8 @@ const DailyExpenses = () => {
                   amount: '',
                   category: '',
                   description: '',
-                  date: new Date().toISOString().split('T')[0]
+                  date: new Date().toISOString().split('T')[0],
+                  expensedBy: employeesList.length > 0 ? employeesList[0].name : ''
                 });
               }}
             >
@@ -479,6 +668,13 @@ const DailyExpenses = () => {
                       })}
                     </div>
                   </div>
+                  
+                  {expense.expensedBy && (
+                    <div className="daily-expenses-item-employee">
+                      <span className="daily-expenses-employee-label">👤 Expensed by:</span>
+                      <span className="daily-expenses-employee-name">{expense.expensedBy}</span>
+                    </div>
+                  )}
                   
                   {expense.description && (
                     <div className="daily-expenses-item-description">{expense.description}</div>
@@ -572,15 +768,27 @@ const DailyExpenses = () => {
                 </div>
               </div>
 
-              {/* <div className="daily-expenses-form-group">
-                <label>Description</label>
-                <textarea
-                  value={newExpense.description}
-                  onChange={(e) => setNewExpense(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Enter expense description (optional)"
-                  rows="3"
-                />
-              </div> */}
+              <div className="daily-expenses-form-group">
+                <label>Expensed By *</label>
+                <select
+                  value={newExpense.expensedBy}
+                  onChange={(e) => setNewExpense(prev => ({ ...prev, expensedBy: e.target.value }))}
+                  required
+                  disabled={isLoadingEmployees}
+                >
+                  {isLoadingEmployees ? (
+                    <option value="">Loading employees...</option>
+                  ) : employeesList.length > 0 ? (
+                    employeesList.map(employee => (
+                      <option key={employee.id} value={employee.name}>
+                        👤 {employee.name}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">No employees found</option>
+                  )}
+                </select>
+              </div>
 
               <div className="daily-expenses-form-actions">
                 <button 
