@@ -40,7 +40,6 @@ import TimesheetReport from './Pages/TimesheetReport/TimesheetReport'
 import LeadsReport from './Pages/LeadsReport/LeadsReport'
 import Materials from './Pages/Materials/Materials'
 import QRCodeGenerator from './Pages/QRCodeGenerator/QRCodeGenerator'
-import UpdateMaterials from './Pages/UpdateMaterials/UpdateMaterials'
 import ToDoList from './Pages/ToDoList/ToDoList'
 import DailyExpenses from './Pages/DailyExpenses/DailyExpenses'
 import Inbox from './Pages/Inbox/Inbox'
@@ -242,7 +241,6 @@ const App = () => {
                 <Route path="/addemployee" element={<AddEmployee />} />
                 <Route path="/addmaterial" element={<AddMaterial />} />
                 <Route path="/materials" element={<Materials />} />
-                <Route path="/updatematerials" element={<UpdateMaterials />} />
                 <Route path="/updatetimesheet" element={<UpdateTimeSheet />} />
                 <Route path="/addcustomer" element={<AddCustomer />} />
                 <Route path="/customers" element={<Customers />} />

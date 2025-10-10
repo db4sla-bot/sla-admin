@@ -132,11 +132,6 @@ export const MenuItemsData = [
                     id: 'addmaterial',
                     label: 'Add Material',
                     link: '/addmaterial'
-                },
-                {
-                    id: 'updatematerials',
-                    label: 'Update Materials',
-                    link: '/updatematerials'
                 }
             ]
         },
