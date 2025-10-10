@@ -70,6 +70,12 @@ const UpdateTimeSheet = () => {
   const [bulkAttendanceData, setBulkAttendanceData] = useState([]);
   const [savingBulkAttendance, setSavingBulkAttendance] = useState(false);
 
+  // Simple Attendance States
+  const [simpleAttendanceDate, setSimpleAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [simpleAttendanceData, setSimpleAttendanceData] = useState([]);
+  const [showSimpleAttendanceModal, setShowSimpleAttendanceModal] = useState(false);
+  const [savingSimpleAttendance, setSavingSimpleAttendance] = useState(false);
+
   // Attendance status options
   const attendanceStatuses = [
     { value: 'present', label: 'Present', icon: CheckCircle, color: '#22c55e' },
@@ -86,6 +92,12 @@ const UpdateTimeSheet = () => {
       initializeBulkAttendance();
     }
   }, [employees, bulkAttendanceDate, showBulkAttendanceModal]);
+
+  useEffect(() => {
+    if (employees.length > 0 && showSimpleAttendanceModal) {
+      initializeSimpleAttendance();
+    }
+  }, [employees, simpleAttendanceDate, showSimpleAttendanceModal]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -350,6 +362,79 @@ const UpdateTimeSheet = () => {
     setSavingBulkAttendance(false);
   };
 
+  const initializeSimpleAttendance = () => {
+    const currentDateAttendance = attendance.filter(a => a.date === simpleAttendanceDate);
+    
+    const simpleData = employees.map(employee => {
+      const existingAttendance = currentDateAttendance.find(a => a.employeeId === employee.id);
+      return {
+        employeeId: employee.id,
+        employeeName: employee.name,
+        designation: employee.designation || 'N/A',
+        status: existingAttendance ? existingAttendance.status : 'present',
+        attendanceId: existingAttendance ? existingAttendance.id : null
+      };
+    });
+
+    setSimpleAttendanceData(simpleData);
+  };
+
+  const handleSimpleAttendanceChange = (employeeId, status) => {
+    setSimpleAttendanceData(prev => prev.map(emp => 
+      emp.employeeId === employeeId 
+        ? { ...emp, status }
+        : emp
+    ));
+  };
+
+  const saveSimpleAttendance = async () => {
+    if (!simpleAttendanceDate) {
+      toast.error("Please select a date");
+      return;
+    }
+
+    setSavingSimpleAttendance(true);
+    
+    try {
+      const savePromises = simpleAttendanceData.map(async (emp) => {
+        const attendanceData = {
+          employeeId: emp.employeeId,
+          date: simpleAttendanceDate,
+          status: emp.status,
+          checkIn: emp.status === 'present' ? '09:00' : '',
+          checkOut: emp.status === 'present' ? '18:00' : '',
+          notes: '',
+          updatedAt: new Date().toISOString()
+        };
+
+        if (emp.attendanceId) {
+          // Update existing attendance
+          await updateDoc(doc(db, "Attendance", emp.attendanceId), {
+            ...attendanceData,
+            updatedAt: new Date().toISOString()
+          });
+        } else {
+          // Create new attendance record
+          await addDoc(collection(db, "Attendance"), {
+            ...attendanceData,
+            createdAt: new Date().toISOString()
+          });
+        }
+      });
+
+      await Promise.all(savePromises);
+      
+      toast.success(`Attendance saved for ${simpleAttendanceData.length} employees!`);
+      setShowSimpleAttendanceModal(false);
+      fetchAttendance();
+    } catch (error) {
+      console.error("Error saving simple attendance:", error);
+      toast.error("Failed to save attendance");
+    }
+
+    setSavingSimpleAttendance(false);
+  };
+
   const generateReport = () => {
     if (!reportFromDate || !reportToDate) {
       toast.error("Please select both from and to dates");
@@ -608,6 +693,16 @@ const UpdateTimeSheet = () => {
           <button 
             className="timesheet-add-btn"
             onClick={() => {
+              setSimpleAttendanceDate(new Date().toISOString().split('T')[0]);
+              setShowSimpleAttendanceModal(true);
+            }}
+          >
+            <Users style={{ width: "18px", height: "18px" }} />
+            Quick Attendance
+          </button>
+          <button 
+            className="timesheet-add-btn"
+            onClick={() => {
               setBulkAttendanceDate(new Date().toISOString().split('T')[0]);
               initializeBulkAttendance();
               setShowBulkAttendanceModal(true);
@@ -734,6 +829,16 @@ const UpdateTimeSheet = () => {
               <div className="timesheet-records-header">
                 <h3>Attendance Records</h3>
                 <div className="timesheet-records-actions">
+                  <button 
+                    className="timesheet-add-btn"
+                    onClick={() => {
+                      setSimpleAttendanceDate(new Date().toISOString().split('T')[0]);
+                      setShowSimpleAttendanceModal(true);
+                    }}
+                  >
+                    <UserCheck size={16} />
+                    Quick
+                  </button>
                   <button 
                     className="timesheet-add-btn timesheet-bulk-btn"
                     onClick={() => {
@@ -1082,6 +1187,144 @@ const UpdateTimeSheet = () => {
         )}
         
       </div>
+
+      {/* Simple Attendance Modal */}
+      {showSimpleAttendanceModal && (
+        <div className="timesheet-modal timesheet-simple-modal">
+          <div className="timesheet-modal-overlay" onClick={() => setShowSimpleAttendanceModal(false)}></div>
+          <div className="timesheet-modal-content">
+            <div className="timesheet-modal-header">
+              <h3>Quick Attendance - Present/Absent</h3>
+              <button 
+                className="timesheet-modal-close"
+                onClick={() => setShowSimpleAttendanceModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="timesheet-simple-form">
+              <div className="timesheet-simple-date-section">
+                <div className="timesheet-form-group">
+                  <label>Date *</label>
+                  <input
+                    type="date"
+                    value={simpleAttendanceDate}
+                    onChange={(e) => {
+                      setSimpleAttendanceDate(e.target.value);
+                      setTimeout(() => initializeSimpleAttendance(), 100);
+                    }}
+                    required
+                  />
+                </div>
+                <div className="timesheet-simple-info">
+                  📅 {new Date(simpleAttendanceDate).toLocaleDateString('en-IN', { 
+                    weekday: 'long', 
+                    day: '2-digit', 
+                    month: 'long', 
+                    year: 'numeric' 
+                  })}
+                </div>
+              </div>
+
+              <div className="timesheet-simple-header">
+                <h4>Mark Attendance ({employees.length} Employees)</h4>
+                <div className="timesheet-simple-quick-actions">
+                  <button 
+                    type="button"
+                    className="timesheet-quick-action-btn present"
+                    onClick={() => {
+                      setSimpleAttendanceData(prev => prev.map(emp => ({ ...emp, status: 'present' })));
+                    }}
+                  >
+                    All Present
+                  </button>
+                  <button 
+                    type="button"
+                    className="timesheet-quick-action-btn absent"
+                    onClick={() => {
+                      setSimpleAttendanceData(prev => prev.map(emp => ({ ...emp, status: 'absent' })));
+                    }}
+                  >
+                    All Absent
+                  </button>
+                </div>
+              </div>
+
+              <div className="timesheet-simple-employees-list">
+                {simpleAttendanceData.map((emp, index) => (
+                  <div key={emp.employeeId} className="timesheet-simple-employee-card">
+                    <div className="timesheet-simple-employee-info">
+                      <div className="timesheet-simple-employee-details">
+                        <h5>{emp.employeeName}</h5>
+                        <p>{emp.designation}</p>
+                      </div>
+                      <div className="timesheet-simple-employee-number">#{index + 1}</div>
+                    </div>
+
+                    <div className="timesheet-simple-radio-group">
+                      <label className="timesheet-simple-radio-option present">
+                        <input
+                          type="radio"
+                          name={`attendance-${emp.employeeId}`}
+                          value="present"
+                          checked={emp.status === 'present'}
+                          onChange={() => handleSimpleAttendanceChange(emp.employeeId, 'present')}
+                        />
+                        <span className="radio-custom"></span>
+                        <CheckCircle size={18} />
+                        Present
+                      </label>
+                      
+                      <label className="timesheet-simple-radio-option absent">
+                        <input
+                          type="radio"
+                          name={`attendance-${emp.employeeId}`}
+                          value="absent"
+                          checked={emp.status === 'absent'}
+                          onChange={() => handleSimpleAttendanceChange(emp.employeeId, 'absent')}
+                        />
+                        <span className="radio-custom"></span>
+                        <XCircle size={18} />
+                        Absent
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="timesheet-simple-actions">
+                <button 
+                  type="button" 
+                  className="timesheet-cancel-btn"
+                  onClick={() => setShowSimpleAttendanceModal(false)}
+                  disabled={savingSimpleAttendance}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="timesheet-save-btn"
+                  onClick={saveSimpleAttendance}
+                  disabled={savingSimpleAttendance}
+                >
+                  {savingSimpleAttendance ? (
+                    <>
+                      <div className="timesheet-loading-spinner small"></div>
+                      Saving {simpleAttendanceData.length} Records...
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck size={18} />
+                      Save Attendance ({simpleAttendanceData.length})
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bulk Attendance Modal */}
       {showBulkAttendanceModal && (
