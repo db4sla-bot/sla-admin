@@ -318,6 +318,29 @@
   min-width: 80px;
 }
 
+.appointments-notes {
+  max-width: 150px;
+}
+
+.appointments-notes-cell {
+  display: flex;
+  align-items: center;
+}
+
+.appointments-notes-text {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.4;
+  word-wrap: break-word;
+  cursor: help;
+}
+
+.appointments-no-notes {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
 /* Action Buttons */
 .appointments-action-buttons {
   display: flex;
@@ -714,7 +737,7 @@
   }
 
   .appointments-table {
-    min-width: 800px;
+    min-width: 900px;
   }
 
   .appointments-table th,
@@ -772,7 +795,7 @@
 
 @media (max-width: 480px) {
   .appointments-table {
-    min-width: 600px;
+    min-width: 700px;
   }
 
   .appointments-page-numbers {

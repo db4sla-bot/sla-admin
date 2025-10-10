@@ -662,7 +662,9 @@ const MonthlyExpenses = () => {
                     </div>
                     <div className="monthly-card-body">
                       {expenseDescription && (
-                        <p className="monthly-expense-description">{expenseDescription}</p>
+                        <div className="monthly-expense-notes">
+                          <p className="monthly-expense-description">{expenseDescription}</p>
+                        </div>
                       )}
                       <div className="monthly-expense-meta">
                         <span className="monthly-expense-month">{formatMonthDisplay(expenseMonth)}</span>

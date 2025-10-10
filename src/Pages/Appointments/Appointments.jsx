@@ -399,6 +399,7 @@ const Appointments = () => {
                   <th>Type</th>
                   <th>Assigned To</th>
                   <th>Status</th>
+                  <th>Notes</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -451,6 +452,20 @@ const Appointments = () => {
                       >
                         {appointment.status || 'N/A'}
                       </span>
+                    </td>
+                    <td className="appointments-notes">
+                      <div className="appointments-notes-cell">
+                        {appointment.notes ? (
+                          <span className="appointments-notes-text" title={appointment.notes}>
+                            {appointment.notes.length > 30 
+                              ? `${appointment.notes.substring(0, 30)}...` 
+                              : appointment.notes
+                            }
+                          </span>
+                        ) : (
+                          <span className="appointments-no-notes">No notes</span>
+                        )}
+                      </div>
                     </td>
                     <td className="appointments-actions">
                       <div className="appointments-action-buttons">

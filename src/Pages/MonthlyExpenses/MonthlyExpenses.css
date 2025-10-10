@@ -230,12 +230,20 @@
   border-top: 2px solid #f7fafc;
 }
 
+.monthly-expense-notes {
+  margin-bottom: 16px;
+}
+
 .monthly-expense-description {
   color: #718096;
   line-height: 1.6;
-  margin-bottom: 16px;
+  margin: 0;
   font-size: 0.95rem;
   font-style: italic;
+  background: #f7fafc;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border-left: 4px solid #4299e1;
 }
 
 .monthly-expense-meta {
