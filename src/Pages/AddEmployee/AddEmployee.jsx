@@ -31,13 +31,11 @@ import { MenuItemsData } from "../../SLAData";
 const AddEmployee = () => {
   const [status, setStatus] = useState("Select the Status");
   const [statusColor, setStatusColor] = useState("#3454d1");
-  const [designation, setDesignation] = useState("Select the Designation");
   const [maritalStatus, setMaritalStatus] = useState("Select Marital Status");
 
   const [loading, setLoading] = useState(false);
 
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);
   const [showMaritalDropdown, setShowMaritalDropdown] = useState(false);
   const [showAccessDropdown, setShowAccessDropdown] = useState(false);
 
@@ -47,6 +45,7 @@ const AddEmployee = () => {
     phone: "",
     username: "",
     password: "",
+    designation: "", // Add designation to formData
     dob: "",
     address: "",
     city: "",
@@ -90,11 +89,6 @@ const AddEmployee = () => {
     setShowStatusDropdown(false);
   };
 
-  const handleDesignationChange = (value) => {
-    setDesignation(value);
-    setShowDesignationDropdown(false);
-  };
-
   const handleMaritalChange = (value) => {
     setMaritalStatus(value);
     setFormData((prev) => ({ ...prev, maritalStatus: value })); // ✅ store in formData
@@ -121,7 +115,7 @@ const AddEmployee = () => {
     if (!formData.username.trim()) return "Username is required";
     if (!formData.password.trim()) return "Password is required";
     if (status === "Select the Status") return "Status is required";
-    if (designation === "Select the Designation") return "Designation is required";
+    if (!formData.designation.trim()) return "Designation is required"; // Change validation
 
     // Additional info
     if (!formData.dob) return "Date of Birth is required";
@@ -174,7 +168,6 @@ const AddEmployee = () => {
         ...formData,
         status,
         statusColor,
-        designation,
         maritalStatus: formData.maritalStatus,
         access
       });
@@ -196,6 +189,7 @@ const AddEmployee = () => {
         phone: "",
         username: "",
         password: "",
+        designation: "", // Reset designation in formData
         dob: "",
         address: "",
         city: "",
@@ -213,7 +207,6 @@ const AddEmployee = () => {
       });
       setStatus("Select the Status");
       setStatusColor("#3454d1");
-      setDesignation("Select the Designation");
       setMaritalStatus("Select Marital Status");
       setAccess([]);
 
@@ -380,34 +373,20 @@ const AddEmployee = () => {
             </div>
           </div>
 
-          {/* Designation */}
-          <div className="dropdown-container">
-            <p className="dropdownlabel">Designation :</p>
-            <div className="drop-down-container">
-              <button
-                type="button"
-                className="dropdown-header"
-                onClick={() => setShowDesignationDropdown((s) => !s)}
-              >
-                <div className="text">{designation}</div>
-                <ChevronDown className="icon" />
-              </button>
-
-              {showDesignationDropdown && (
-                <div className="dropdownlist designationDropdown">
-                  {["Sales Executive", "Marketing Executive", "Tele Caller", "Technician"].map(
-                    (role) => (
-                      <div
-                        key={role}
-                        className="dropdown-list-item"
-                        onClick={() => handleDesignationChange(role)}
-                      >
-                        <div className="text">{role}</div>
-                      </div>
-                    )
-                  )}
-                </div>
-              )}
+          {/* Designation - Change from dropdown to input */}
+          <div className="input-container">
+            <p className="input-label">Designation :</p>
+            <div className="input-con">
+              <div className="icon-con">
+                <User className="icon" />
+              </div>
+              <input
+                type="text"
+                placeholder="Enter designation (e.g., Sales Executive)"
+                name="designation"
+                value={formData.designation}
+                onChange={handleChange}
+              />
             </div>
           </div>
 
