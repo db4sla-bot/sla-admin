@@ -18,7 +18,8 @@ import {
   AlertCircle,
   Sun,
   FileText,
-  BarChart3
+  BarChart3,
+  Home // Add Home icon import
 } from 'lucide-react';
 import { toast } from "react-toastify";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, orderBy } from "firebase/firestore";
@@ -76,9 +77,10 @@ const UpdateTimeSheet = () => {
   const [showSimpleAttendanceModal, setShowSimpleAttendanceModal] = useState(false);
   const [savingSimpleAttendance, setSavingSimpleAttendance] = useState(false);
 
-  // Attendance status options
+  // Attendance status options - Updated to include Work from Home
   const attendanceStatuses = [
     { value: 'present', label: 'Present', icon: CheckCircle, color: '#22c55e' },
+    { value: 'wfh', label: 'Work from Home', icon: Home, color: '#3b82f6' },
     { value: 'absent', label: 'Absent', icon: XCircle, color: '#ef4444' },
     { value: 'half-day', label: 'Half Day', icon: AlertCircle, color: '#f59e0b' }
   ];
@@ -475,6 +477,7 @@ const UpdateTimeSheet = () => {
 
     let totalWorkingDays = 0;
     let presentDays = 0;
+    let wfhDays = 0; // Add WFH tracking
     let absentDays = 0;
     let halfDays = 0;
     const dailyRecords = [];
@@ -506,6 +509,7 @@ const UpdateTimeSheet = () => {
 
       if (!isSunday && !isHoliday) {
         if (status === 'present') presentDays++;
+        else if (status === 'wfh') wfhDays++; // Track WFH days
         else if (status === 'absent') absentDays++;
         else if (status === 'half-day') halfDays += 0.5;
       }
@@ -523,8 +527,9 @@ const UpdateTimeSheet = () => {
       });
     });
 
+    // Include WFH days in attendance percentage calculation
     const attendancePercentage = totalWorkingDays > 0 ? 
-      ((presentDays + halfDays) / totalWorkingDays * 100).toFixed(2) : 0;
+      ((presentDays + wfhDays + halfDays) / totalWorkingDays * 100).toFixed(2) : 0;
 
     return {
       type: 'individual',
@@ -533,6 +538,7 @@ const UpdateTimeSheet = () => {
       summary: {
         totalWorkingDays,
         presentDays,
+        wfhDays, // Add to summary
         absentDays,
         halfDays,
         attendancePercentage
@@ -545,6 +551,7 @@ const UpdateTimeSheet = () => {
     const employeeReports = employees.map(employee => {
       let totalWorkingDays = 0;
       let presentDays = 0;
+      let wfhDays = 0; // Add WFH tracking
       let absentDays = 0;
       let halfDays = 0;
 
@@ -562,6 +569,7 @@ const UpdateTimeSheet = () => {
 
           if (attendanceRecord) {
             if (attendanceRecord.status === 'present') presentDays++;
+            else if (attendanceRecord.status === 'wfh') wfhDays++; // Track WFH
             else if (attendanceRecord.status === 'absent') absentDays++;
             else if (attendanceRecord.status === 'half-day') halfDays += 0.5;
           } else {
@@ -570,14 +578,16 @@ const UpdateTimeSheet = () => {
         }
       });
 
+      // Include WFH days in attendance percentage
       const attendancePercentage = totalWorkingDays > 0 ? 
-        ((presentDays + halfDays) / totalWorkingDays * 100).toFixed(2) : 0;
+        ((presentDays + wfhDays + halfDays) / totalWorkingDays * 100).toFixed(2) : 0;
 
       return {
         employee,
         summary: {
           totalWorkingDays,
           presentDays,
+          wfhDays, // Add to summary
           absentDays,
           halfDays,
           attendancePercentage
@@ -753,7 +763,7 @@ const UpdateTimeSheet = () => {
         {/* Tab Content */}
         {activeTab === 'attendance' && (
           <div className="timesheet-tab-content">
-            {/* Today's Summary */}
+            {/* Today's Summary - Updated */}
             <div className="timesheet-summary-cards">
               <div className="timesheet-summary-card total">
                 <div className="timesheet-summary-icon">
@@ -771,7 +781,18 @@ const UpdateTimeSheet = () => {
                 <div className="timesheet-summary-content">
                   <div className="timesheet-summary-label">Present Today</div>
                   <div className="timesheet-summary-value">
-                    {getTodayAttendance().filter(a => a.status === 'present').length}
+                    {getTodayAttendance().filter(a => a.status === 'present' || a.status === 'wfh').length}
+                  </div>
+                </div>
+              </div>
+              <div className="timesheet-summary-card wfh">
+                <div className="timesheet-summary-icon">
+                  <Home size={24} />
+                </div>
+                <div className="timesheet-summary-content">
+                  <div className="timesheet-summary-label">Work from Home</div>
+                  <div className="timesheet-summary-value">
+                    {getTodayAttendance().filter(a => a.status === 'wfh').length}
                   </div>
                 </div>
               </div>
@@ -1038,6 +1059,10 @@ const UpdateTimeSheet = () => {
                           <span className="value present">{reportData.summary.presentDays}</span>
                         </div>
                         <div className="timesheet-summary-item">
+                          <span className="label">Work from Home:</span>
+                          <span className="value wfh">{reportData.summary.wfhDays}</span>
+                        </div>
+                        <div className="timesheet-summary-item">
                           <span className="label">Absent Days:</span>
                           <span className="value absent">{reportData.summary.absentDays}</span>
                         </div>
@@ -1068,6 +1093,7 @@ const UpdateTimeSheet = () => {
                               <div className="timesheet-day-status">
                                 {record.isSunday ? 'Sunday' : 
                                  record.isHoliday ? record.isHoliday.name :
+                                 record.status === 'wfh' ? 'WFH' :
                                  record.status}
                               </div>
                               {record.checkIn && (
@@ -1098,6 +1124,7 @@ const UpdateTimeSheet = () => {
                               <th>Designation</th>
                               <th>Working Days</th>
                               <th>Present</th>
+                              <th>Work from Home</th>
                               <th>Absent</th>
                               <th>Half Days</th>
                               <th>Attendance %</th>
@@ -1110,6 +1137,7 @@ const UpdateTimeSheet = () => {
                                 <td>{empReport.employee.designation || 'N/A'}</td>
                                 <td>{empReport.summary.totalWorkingDays}</td>
                                 <td className="present">{empReport.summary.presentDays}</td>
+                                <td className="wfh">{empReport.summary.wfhDays}</td>
                                 <td className="absent">{empReport.summary.absentDays}</td>
                                 <td className="half">{empReport.summary.halfDays}</td>
                                 <td className="percentage">{empReport.summary.attendancePercentage}%</td>
@@ -1241,6 +1269,15 @@ const UpdateTimeSheet = () => {
                   </button>
                   <button 
                     type="button"
+                    className="timesheet-quick-action-btn wfh"
+                    onClick={() => {
+                      setSimpleAttendanceData(prev => prev.map(emp => ({ ...emp, status: 'wfh' })));
+                    }}
+                  >
+                    All WFH
+                  </button>
+                  <button 
+                    type="button"
                     className="timesheet-quick-action-btn absent"
                     onClick={() => {
                       setSimpleAttendanceData(prev => prev.map(emp => ({ ...emp, status: 'absent' })));
@@ -1274,6 +1311,19 @@ const UpdateTimeSheet = () => {
                         <span className="radio-custom"></span>
                         <CheckCircle size={18} />
                         Present
+                      </label>
+                      
+                      <label className="timesheet-simple-radio-option wfh">
+                        <input
+                          type="radio"
+                          name={`attendance-${emp.employeeId}`}
+                          value="wfh"
+                          checked={emp.status === 'wfh'}
+                          onChange={() => handleSimpleAttendanceChange(emp.employeeId, 'wfh')}
+                        />
+                        <span className="radio-custom"></span>
+                        <Home size={18} />
+                        WFH
                       </label>
                       
                       <label className="timesheet-simple-radio-option absent">
@@ -1326,7 +1376,7 @@ const UpdateTimeSheet = () => {
         </div>
       )}
 
-      {/* Bulk Attendance Modal */}
+      {/* Bulk Attendance Modal - Updated */}
       {showBulkAttendanceModal && (
         <div className="timesheet-modal timesheet-bulk-modal">
           <div className="timesheet-modal-overlay" onClick={() => setShowBulkAttendanceModal(false)}></div>
@@ -1377,7 +1427,16 @@ const UpdateTimeSheet = () => {
                         setBulkAttendanceData(prev => prev.map(emp => ({ ...emp, status: 'present' })));
                       }}
                     >
-                      Mark All Present
+                      All Present
+                    </button>
+                    <button 
+                      type="button"
+                      className="timesheet-quick-action-btn wfh"
+                      onClick={() => {
+                        setBulkAttendanceData(prev => prev.map(emp => ({ ...emp, status: 'wfh' })));
+                      }}
+                    >
+                      All WFH
                     </button>
                     <button 
                       type="button"
@@ -1386,7 +1445,7 @@ const UpdateTimeSheet = () => {
                         setBulkAttendanceData(prev => prev.map(emp => ({ ...emp, status: 'absent' })));
                       }}
                     >
-                      Mark All Absent
+                      All Absent
                     </button>
                   </div>
                 </div>
@@ -1424,7 +1483,7 @@ const UpdateTimeSheet = () => {
                           </div>
                         </div>
 
-                        {emp.status === 'present' && (
+                        {(emp.status === 'present' || emp.status === 'wfh') && (
                           <div className="timesheet-bulk-time-group">
                             <div className="timesheet-time-input">
                               <label>Check In:</label>

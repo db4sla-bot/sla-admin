@@ -131,6 +131,10 @@
     background: linear-gradient(90deg, #ef4444, #dc2626);
 }
 
+.timesheet-summary-card.wfh::before {
+    background: linear-gradient(90deg, #3b82f6, #1e40af);
+}
+
 .timesheet-summary-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
@@ -157,6 +161,10 @@
 
 .timesheet-summary-card.absent .timesheet-summary-icon {
     background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.timesheet-summary-card.wfh .timesheet-summary-icon {
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
 }
 
 .timesheet-summary-content {
@@ -564,6 +572,10 @@
     color: var(--blue);
 }
 
+.timesheet-summary-item .value.wfh {
+    color: #3b82f6;
+}
+
 /* Calendar View */
 .timesheet-daily-records h4 {
     font-size: 18px;
@@ -600,6 +612,11 @@
 .timesheet-day-card.half-day {
     border-color: #f59e0b;
     background: #fffbeb;
+}
+
+.timesheet-day-card.wfh {
+    border-color: #3b82f6;
+    background: #eff6ff;
 }
 
 .timesheet-day-card.non-working {
@@ -675,6 +692,11 @@
 .timesheet-bulk-table td.percentage {
     color: var(--blue);
     font-weight: 700;
+}
+
+.timesheet-bulk-table td.wfh {
+    color: #3b82f6;
+    font-weight: 600;
 }
 
 .timesheet-bulk-table tr:hover {
@@ -1133,6 +1155,11 @@
     color: #fff;
 }
 
+.timesheet-quick-action-btn.wfh {
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+    color: #fff;
+}
+
 .timesheet-quick-action-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -1486,6 +1513,10 @@
   color: #ef4444;
 }
 
+.timesheet-simple-radio-option.wfh {
+  color: #3b82f6;
+}
+
 .timesheet-simple-radio-option:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -1504,6 +1535,10 @@
   color: #ef4444;
 }
 
+.timesheet-simple-radio-option.wfh input[type="radio"]:checked ~ * {
+    color: #3b82f6;
+}
+
 .timesheet-simple-radio-option.present:has(input:checked) {
   background: linear-gradient(135deg, #f0fdf4, #dcfce7);
   border-color: #22c55e;
@@ -1514,6 +1549,12 @@
   background: linear-gradient(135deg, #fef2f2, #fee2e2);
   border-color: #ef4444;
   box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
+}
+
+.timesheet-simple-radio-option.wfh:has(input:checked) {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border-color: #3b82f6;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
 }
 
 .radio-custom {
