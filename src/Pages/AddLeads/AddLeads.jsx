@@ -8,6 +8,7 @@ import { db } from '../../Firebase'
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { useAppContext } from '../../Context';
+import notificationService from '../../utils/notificationService';
 
 const AddLeads = () => {
   const { user, userDetails, userDetailsLoading } = useAppContext();
@@ -122,7 +123,7 @@ const AddLeads = () => {
     try {
       const leadData = {
         ...formData,
-        requiredServices: selectedServices, // Changed to array
+        requiredServices: selectedServices,
         source: selectedSource,
         subSource: selectedSubSource,
         createdAt: Timestamp.now(),
@@ -130,8 +131,19 @@ const AddLeads = () => {
       };
       
       // Save to Firebase
-      await addDoc(collection(db, "Leads"), leadData);
+      const docRef = await addDoc(collection(db, "Leads"), leadData);
+      const savedLeadData = { ...leadData, id: docRef.id };
+      
       toast.success('Lead saved successfully');
+
+      // Send notification to all app installations using service worker
+      try {
+        await notificationService.sendLeadNotification(savedLeadData);
+        console.log('Lead notification sent to all devices');
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError);
+        // Don't show error to user as lead was saved successfully
+      }
 
       // Clear all form fields after successful save
       setFormData({

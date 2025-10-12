@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sla-admin-v1'; // This will be auto-updated on build
+const CACHE_NAME = 'sla-admin-v1760274401265'; // This will be auto-updated on build
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -121,9 +121,150 @@ self.addEventListener('fetch', event => {
   }
 });
 
-// Handle messages from clients
+// Push notification event handler
+self.addEventListener('push', event => {
+  console.log('SW: Push event received:', event);
+  
+  let notificationData = {
+    title: '🚀 New Lead Alert!',
+    body: 'A new lead has been added to the system',
+    icon: '/fav.png',
+    badge: '/fav.png',
+    tag: 'lead-notification',
+    requireInteraction: true,
+    actions: [
+      {
+        action: 'view',
+        title: 'View Lead',
+        icon: '/fav.png'
+      },
+      {
+        action: 'dismiss',
+        title: 'Dismiss'
+      }
+    ],
+    data: {
+      url: '/leads',
+      timestamp: Date.now()
+    }
+  };
+
+  // Parse push data if available
+  if (event.data) {
+    try {
+      const pushData = event.data.json();
+      notificationData = {
+        ...notificationData,
+        ...pushData
+      };
+    } catch (e) {
+      console.warn('SW: Could not parse push data:', e);
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, notificationData)
+  );
+});
+
+// Notification click event handler
+self.addEventListener('notificationclick', event => {
+  console.log('SW: Notification clicked:', event);
+  
+  event.notification.close();
+
+  const notificationData = event.notification.data || {};
+  let targetUrl = '/';
+
+  if (event.action === 'view') {
+    targetUrl = notificationData.url || '/leads';
+  } else if (event.action === 'dismiss') {
+    return;
+  } else {
+    targetUrl = notificationData.url || '/';
+  }
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then(windowClients => {
+      // Check if there's already a window/tab open with the target URL
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url.includes(targetUrl.split('?')[0]) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      
+      // If no window/tab is already open, open a new one
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
+// Handle messages from clients (for manual notifications)
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+  
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data;
+    
+    const notificationOptions = {
+      body: options.body || 'A new lead has been added',
+      icon: '/fav.png',
+      badge: '/fav.png',
+      tag: 'lead-notification',
+      requireInteraction: true,
+      actions: [
+        {
+          action: 'view',
+          title: 'View Lead',
+          icon: '/fav.png'
+        },
+        {
+          action: 'dismiss',
+          title: 'Dismiss'
+        }
+      ],
+      data: {
+        url: '/leads',
+        leadId: options.leadId,
+        leadName: options.leadName,
+        timestamp: Date.now()
+      },
+      ...options
+    };
+
+    self.registration.showNotification(title, notificationOptions);
+  }
 });
+
+// Background sync for offline notifications
+self.addEventListener('sync', event => {
+  if (event.tag === 'lead-notification-sync') {
+    event.waitUntil(
+      // Check for pending notifications in IndexedDB or localStorage
+      handleBackgroundSync()
+    );
+  }
+});
+
+async function handleBackgroundSync() {
+  try {
+    // This would check for any pending notifications that need to be sent
+    // when the device comes back online
+    console.log('SW: Background sync triggered for notifications');
+    
+    // You could implement logic here to:
+    // 1. Check IndexedDB for pending notifications
+    // 2. Send notifications that were queued while offline
+    // 3. Sync with server for missed notifications
+    
+    return Promise.resolve();
+  } catch (error) {
+    console.error('SW: Background sync failed:', error);
+    return Promise.reject(error);
+  }
+}

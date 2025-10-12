@@ -58,6 +58,8 @@ import PWAInstallPrompt from './Components/PWAInstallPrompt/PWAInstallPrompt'
 import PWAUpdateNotification from './Components/PWAUpdateNotification/PWAUpdateNotification'
 import MonthlyExpenses from './Pages/MonthlyExpenses/MonthlyExpenses'
 import PWAUpdater from './Components/PWAUpdater/PWAUpdater'
+import notificationService from './utils/notificationService';
+import NotificationPermission from './Components/NotificationPermission/NotificationPermission';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -132,12 +134,35 @@ const App = () => {
     }
   }, [userAccess]);
   
+  useEffect(() => {
+    // Initialize notification service when app loads
+    const initNotifications = async () => {
+      try {
+        await notificationService.initialize();
+        console.log('Notification service initialized');
+        
+        // Check for any pending notifications
+        await notificationService.checkPendingNotifications();
+      } catch (error) {
+        console.error('Failed to initialize notifications:', error);
+      }
+    };
+
+    initNotifications();
+
+    // Cleanup on unmount
+    return () => {
+      notificationService.destroy();
+    };
+  }, []);
+
   if (loading) {
     return <Loading />
   }
 
   return (
     <>
+      <NotificationPermission />
       {isAuthenticated ? (
         <>
           <ToastContainer position="top-right" autoClose={3000} />
