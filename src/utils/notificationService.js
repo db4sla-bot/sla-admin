@@ -1,3 +1,6 @@
+import { collection, addDoc, getDocs, query, where, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../Firebase';
+
 class NotificationService {
   constructor() {
     this.registration = null;
@@ -7,6 +10,7 @@ class NotificationService {
     this.broadcastChannel = null;
     this.retryCount = 0;
     this.maxRetries = 3;
+    this.deviceToken = null;
   }
 
   async initialize() {
@@ -37,10 +41,11 @@ class NotificationService {
         console.log('✅ Notification service initialized successfully');
         this.setupMessageListener();
         this.setupBroadcastChannel();
-        this.initialized = true;
         
-        // Test notification to confirm it's working
-        await this.sendTestNotification();
+        // Generate and register device token
+        await this.registerDeviceToken();
+        
+        this.initialized = true;
       } else {
         console.warn('⚠️ Notification permission not granted:', this.permission);
         this.initialized = true; // Still mark as initialized to prevent endless retries
@@ -115,6 +120,60 @@ class NotificationService {
     }
   }
 
+  async registerDeviceToken() {
+    try {
+      // Generate a unique device token
+      const deviceId = this.getDeviceId();
+      const userAgent = navigator.userAgent;
+      const timestamp = Date.now();
+      
+      this.deviceToken = `${deviceId}-${timestamp}`;
+      
+      // Check if this device token already exists
+      const tokensRef = collection(db, 'notificationTokens');
+      const q = query(tokensRef, where('deviceToken', '==', this.deviceToken));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        // Register new device token
+        await addDoc(tokensRef, {
+          deviceToken: this.deviceToken,
+          deviceId: deviceId,
+          userAgent: userAgent,
+          createdAt: new Date().toISOString(),
+          lastUsed: new Date().toISOString(),
+          active: true,
+          permissions: this.permission
+        });
+        console.log('📱 Device token registered:', this.deviceToken);
+      } else {
+        // Update existing token
+        const docRef = querySnapshot.docs[0].ref;
+        await updateDoc(docRef, {
+          lastUsed: new Date().toISOString(),
+          active: true,
+          permissions: this.permission
+        });
+        console.log('🔄 Device token updated:', this.deviceToken);
+      }
+    } catch (error) {
+      console.error('❌ Error registering device token:', error);
+    }
+  }
+
+  getDeviceId() {
+    // Try to get existing device ID from localStorage
+    let deviceId = localStorage.getItem('deviceId');
+    
+    if (!deviceId) {
+      // Generate new device ID if none exists
+      deviceId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+      localStorage.setItem('deviceId', deviceId);
+    }
+    
+    return deviceId;
+  }
+
   setupMessageListener() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
@@ -150,25 +209,6 @@ class NotificationService {
       }
     } else {
       console.warn('⚠️ BroadcastChannel not supported');
-    }
-  }
-
-  async sendTestNotification() {
-    try {
-      // Don't send test notification in production or if user hasn't explicitly enabled notifications
-      if (window.location.hostname !== 'localhost') {
-        return;
-      }
-      
-      console.log('🧪 Sending test notification...');
-      await this.showNotification('🎉 Notifications Enabled!', {
-        body: 'You will now receive notifications for new leads',
-        tag: 'test-notification',
-        requireInteraction: false,
-        silent: true // Don't make sound for test
-      });
-    } catch (error) {
-      console.error('❌ Error sending test notification:', error);
     }
   }
 
@@ -303,13 +343,13 @@ class NotificationService {
         }
       };
 
-      // Show notification in current window/tab
+      // 1. Show notification in current device/tab
       const success = await this.showNotification(title, options);
 
       if (success) {
-        console.log('✅ Lead notification sent successfully');
+        console.log('✅ Local notification sent successfully');
         
-        // Broadcast to other tabs/windows using BroadcastChannel
+        // 2. Broadcast to other tabs in same browser
         if (this.broadcastChannel) {
           try {
             this.broadcastChannel.postMessage({
@@ -324,10 +364,13 @@ class NotificationService {
           }
         }
 
-        // Store notification for offline users or missed notifications
+        // 3. Send to ALL OTHER DEVICES via server
+        await this.sendToAllDevices(leadData, title, options);
+        
+        // 4. Store notification for offline users
         this.storeNotificationForOfflineUsers(leadData);
         
-        // Notify subscribers (if any components are listening)
+        // 5. Notify subscribers (if any components are listening)
         this.notifySubscribers({
           type: 'lead_notification_sent',
           leadData: leadData,
@@ -339,6 +382,83 @@ class NotificationService {
 
     } catch (error) {
       console.error('❌ Error sending lead notification:', error);
+    }
+  }
+
+  async sendToAllDevices(leadData, title, options) {
+    try {
+      console.log('🌐 Sending notification to all devices...');
+
+      // Store the notification in Firestore for all devices to pick up
+      const notificationData = {
+        type: 'new_lead',
+        title: title,
+        body: options.body,
+        leadData: leadData,
+        options: options,
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Expire after 24 hours
+        senderDeviceToken: this.deviceToken,
+        processed: false
+      };
+
+      // Add to global notifications collection
+      await addDoc(collection(db, 'globalNotifications'), notificationData);
+      console.log('📤 Global notification stored in Firestore');
+
+      // Start polling for new notifications if not already started
+      this.startNotificationPolling();
+
+    } catch (error) {
+      console.error('❌ Error sending to all devices:', error);
+    }
+  }
+
+  startNotificationPolling() {
+    // Prevent multiple polling intervals
+    if (this.pollingInterval) {
+      return;
+    }
+
+    console.log('🔄 Starting notification polling...');
+    
+    this.pollingInterval = setInterval(async () => {
+      await this.checkForNewNotifications();
+    }, 5000); // Check every 5 seconds
+  }
+
+  async checkForNewNotifications() {
+    try {
+      // Get unprocessed notifications from the last 5 minutes
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      
+      const notificationsQuery = query(
+        collection(db, 'globalNotifications'),
+        where('processed', '==', false),
+        where('createdAt', '>', fiveMinutesAgo)
+      );
+
+      const querySnapshot = await getDocs(notificationsQuery);
+      
+      querySnapshot.forEach(async (docSnapshot) => {
+        const notification = docSnapshot.data();
+        
+        // Don't process notifications sent by this device
+        if (notification.senderDeviceToken === this.deviceToken) {
+          return;
+        }
+
+        console.log('📬 Received global notification:', notification.title);
+        
+        // Show the notification
+        await this.showNotification(notification.title, notification.options);
+        
+        // Mark as processed (optional - you might want to keep for audit)
+        // await updateDoc(docSnapshot.ref, { processed: true });
+      });
+
+    } catch (error) {
+      console.error('❌ Error checking for new notifications:', error);
     }
   }
 
@@ -443,6 +563,11 @@ class NotificationService {
     if (this.broadcastChannel) {
       this.broadcastChannel.close();
       this.broadcastChannel = null;
+    }
+    
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
     }
     
     this.subscribers.clear();

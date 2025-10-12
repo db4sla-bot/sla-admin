@@ -139,18 +139,17 @@ const App = () => {
     // Initialize notification service when app loads
     const initNotifications = async () => {
       try {
-        console.log('Starting notification service initialization...');
+        console.log('🚀 Starting notification service initialization...');
         await notificationService.initialize();
-        console.log('Notification service initialized successfully');
-        setNotificationInitialized(true);
+        console.log('✅ Notification service initialized');
         
         // Check for any pending notifications
         await notificationService.checkPendingNotifications();
-        console.log('Checked pending notifications');
+        console.log('📬 Checked pending notifications');
+        
+        console.log('🌐 Global notification system is now active');
       } catch (error) {
-        console.error('Failed to initialize notifications:', error);
-        // Still set as initialized to prevent blocking the app
-        setNotificationInitialized(true);
+        console.error('❌ Failed to initialize notifications:', error);
       }
     };
 

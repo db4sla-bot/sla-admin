@@ -138,9 +138,15 @@ const AddLeads = () => {
       toast.success('Lead saved successfully! 🎉');
       console.log('✅ Lead saved with ID:', docRef.id);
 
-      // Send push notification to all app installations
+      // Send push notification to ALL devices globally
       try {
-        console.log('🔔 Sending notification for lead:', savedLeadData.name);
+        console.log('🌐 Sending notifications to all devices...');
+        
+        // Show immediate toast
+        toast.info('📱 Sending notifications to all devices...', {
+          position: "bottom-right",
+          autoClose: 2000,
+        });
         
         // Check if notification service is available
         if (!notificationService) {
@@ -154,20 +160,20 @@ const AddLeads = () => {
           await notificationService.initialize();
         }
         
-        // Send the notification
+        // Send the notification to ALL devices
         await notificationService.sendLeadNotification(savedLeadData);
-        console.log('✅ Notification sent successfully');
+        console.log('✅ Notifications sent to all devices');
         
-        // Show a success indicator for notifications
+        // Show success indicator for notifications
         setTimeout(() => {
-          toast.info('📱 Notifications sent to all devices!', {
+          toast.success('🌐 Notifications sent to all installed devices!', {
             position: "bottom-right",
-            autoClose: 3000,
+            autoClose: 4000,
           });
-        }, 1000);
+        }, 2000);
         
       } catch (notificationError) {
-        console.error('❌ Failed to send notification:', notificationError);
+        console.error('❌ Failed to send notifications:', notificationError);
         
         // Show user-friendly message about notification failure
         toast.warn('⚠️ Lead saved but notifications may not have been sent to all devices', {
