@@ -4,5 +4,9 @@
             "source": "/(.*)",
             "destination": "/"
         }
-    ]
+    ],
+    "buildCommand": "node scripts/update-pwa-version.js && npm run build",
+    "outputDirectory": "dist",
+    "framework": "vite",
+    "installCommand": "npm install"
 }

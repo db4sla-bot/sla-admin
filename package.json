@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/update-pwa-version.js",
+    "prebuild": "node scripts/update-pwa-version.mjs",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "update-pwa": "node scripts/update-pwa-version.js",
-    "deploy": "npm run update-pwa && npm run build"
+    "postbuild": "echo 'Build completed successfully'",
+    "update-pwa": "node scripts/update-pwa-version.mjs",
+    "deploy": "npm run update-pwa && npm run build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "bootstrap": "^5.3.7",

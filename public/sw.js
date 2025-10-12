@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sla-admin-v4'; // This will be auto-updated on build
+const CACHE_NAME = 'sla-admin-v1'; // This will be auto-updated on build
 const urlsToCache = [
   '/',
   '/manifest.json',
