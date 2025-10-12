@@ -1,13 +1,7 @@
 {
-  "name": "SLA Admin Dashboard",
   "short_name": "SLA Admin",
+  "name": "SLA Admin Dashboard",
   "description": "SLA Admin Dashboard for managing employees, attendance, expenses and business operations",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#3454d1",
-  "orientation": "portrait-primary",
-  "scope": "/",
   "icons": [
     {
       "src": "fav.png",
@@ -70,9 +64,13 @@
       "purpose": "maskable"
     }
   ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#3454d1",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
   "categories": ["business", "productivity", "utilities"],
   "lang": "en",
-  "dir": "ltr",
-  "permissions": ["notifications"],
-  "prefer_related_applications": false
+  "dir": "ltr"
 }

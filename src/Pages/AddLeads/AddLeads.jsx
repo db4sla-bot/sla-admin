@@ -136,12 +136,12 @@ const AddLeads = () => {
       
       toast.success('Lead saved successfully');
 
-      // Send notification to all app installations using service worker
+      // Send push notification to all app installations (no text notification)
       try {
         await notificationService.sendLeadNotification(savedLeadData);
-        console.log('Lead notification sent to all devices');
+        console.log('Push notification sent to all devices');
       } catch (notificationError) {
-        console.error('Failed to send notification:', notificationError);
+        console.error('Failed to send push notification:', notificationError);
         // Don't show error to user as lead was saved successfully
       }
 
