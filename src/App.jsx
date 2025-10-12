@@ -66,6 +66,7 @@ const App = () => {
   const [loading, setLoading] = useState(true)
   const [userAccess, setUserAccess] = useState([])
   const [filteredMenuItems, setFilteredMenuItems] = useState([])
+  const [notificationInitialized, setNotificationInitialized] = useState(false);
   const location = useLocation();
 
   const handleMenuSidebarClose = () => {
@@ -138,23 +139,32 @@ const App = () => {
     // Initialize notification service when app loads
     const initNotifications = async () => {
       try {
+        console.log('Starting notification service initialization...');
         await notificationService.initialize();
-        console.log('Notification service initialized');
+        console.log('Notification service initialized successfully');
+        setNotificationInitialized(true);
         
         // Check for any pending notifications
         await notificationService.checkPendingNotifications();
+        console.log('Checked pending notifications');
       } catch (error) {
         console.error('Failed to initialize notifications:', error);
+        // Still set as initialized to prevent blocking the app
+        setNotificationInitialized(true);
       }
     };
 
-    initNotifications();
+    if (isAuthenticated && !notificationInitialized) {
+      initNotifications();
+    }
 
     // Cleanup on unmount
     return () => {
-      notificationService.destroy();
+      if (notificationInitialized) {
+        notificationService.destroy();
+      }
     };
-  }, []);
+  }, [isAuthenticated, notificationInitialized]);
 
   if (loading) {
     return <Loading />

@@ -4,12 +4,17 @@ class NotificationService {
     this.permission = 'default';
     this.initialized = false;
     this.subscribers = new Set();
+    this.broadcastChannel = null;
+    this.retryCount = 0;
+    this.maxRetries = 3;
   }
 
   async initialize() {
     if (this.initialized) return;
 
     try {
+      console.log('🔔 Initializing notification service...');
+
       // Check if service workers are supported
       if (!('serviceWorker' in navigator)) {
         throw new Error('Service Workers are not supported');
@@ -21,23 +26,60 @@ class NotificationService {
       }
 
       // Register service worker if not already registered
-      this.registration = await navigator.serviceWorker.ready;
+      this.registration = await this.getServiceWorkerRegistration();
+      console.log('✅ Service worker ready:', this.registration);
 
       // Request notification permission
       this.permission = await this.requestPermission();
+      console.log('📋 Notification permission:', this.permission);
 
       if (this.permission === 'granted') {
-        console.log('Notification service initialized successfully');
+        console.log('✅ Notification service initialized successfully');
         this.setupMessageListener();
+        this.setupBroadcastChannel();
         this.initialized = true;
         
-        // Subscribe to notifications from other tabs/windows
-        this.setupBroadcastChannel();
+        // Test notification to confirm it's working
+        await this.sendTestNotification();
       } else {
-        console.warn('Notification permission not granted:', this.permission);
+        console.warn('⚠️ Notification permission not granted:', this.permission);
+        this.initialized = true; // Still mark as initialized to prevent endless retries
       }
     } catch (error) {
-      console.error('Failed to initialize notification service:', error);
+      console.error('❌ Failed to initialize notification service:', error);
+      
+      // Retry initialization up to maxRetries times
+      if (this.retryCount < this.maxRetries) {
+        this.retryCount++;
+        console.log(`🔄 Retrying initialization (${this.retryCount}/${this.maxRetries})...`);
+        setTimeout(() => this.initialize(), 2000 * this.retryCount);
+      } else {
+        console.error('❌ Max retries reached. Notification service initialization failed.');
+        this.initialized = true; // Prevent further attempts
+      }
+    }
+  }
+
+  async getServiceWorkerRegistration() {
+    try {
+      // Try to get existing registration first
+      let registration = await navigator.serviceWorker.ready;
+      
+      if (!registration) {
+        // Register new service worker if none exists
+        console.log('📝 Registering new service worker...');
+        registration = await navigator.serviceWorker.register('/sw.js', {
+          scope: '/'
+        });
+        
+        // Wait for it to be ready
+        registration = await navigator.serviceWorker.ready;
+      }
+      
+      return registration;
+    } catch (error) {
+      console.error('❌ Error getting service worker registration:', error);
+      throw error;
     }
   }
 
@@ -47,12 +89,28 @@ class NotificationService {
     }
 
     try {
-      // Request permission
-      const permission = await Notification.requestPermission();
-      this.permission = permission;
-      return permission;
+      // Show a user-friendly prompt first
+      if (this.permission === 'default') {
+        console.log('🔔 Requesting notification permission...');
+        
+        // Request permission
+        const permission = await Notification.requestPermission();
+        this.permission = permission;
+        
+        if (permission === 'granted') {
+          console.log('✅ Notification permission granted!');
+        } else if (permission === 'denied') {
+          console.warn('❌ Notification permission denied');
+        } else {
+          console.warn('⏸️ Notification permission dismissed');
+        }
+        
+        return permission;
+      }
+      
+      return this.permission;
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      console.error('❌ Error requesting notification permission:', error);
       return 'denied';
     }
   }
@@ -60,8 +118,10 @@ class NotificationService {
   setupMessageListener() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
+        console.log('📨 Message from service worker:', event.data);
+        
         if (event.data && event.data.type === 'SW_UPDATED') {
-          console.log('Service worker updated:', event.data.version);
+          console.log('🔄 Service worker updated:', event.data.version);
         }
       });
     }
@@ -70,31 +130,65 @@ class NotificationService {
   setupBroadcastChannel() {
     // Use BroadcastChannel to communicate between tabs
     if ('BroadcastChannel' in window) {
-      this.broadcastChannel = new BroadcastChannel('lead-notifications');
+      try {
+        this.broadcastChannel = new BroadcastChannel('lead-notifications');
+        
+        this.broadcastChannel.addEventListener('message', (event) => {
+          console.log('📡 Broadcast message received:', event.data);
+          
+          if (event.data.type === 'NEW_LEAD') {
+            // Only show notification if this isn't the tab that created the lead
+            if (!event.data.fromCurrentTab) {
+              this.showNotification(event.data.title, event.data.options);
+            }
+          }
+        });
+        
+        console.log('📡 Broadcast channel setup complete');
+      } catch (error) {
+        console.error('❌ Error setting up broadcast channel:', error);
+      }
+    } else {
+      console.warn('⚠️ BroadcastChannel not supported');
+    }
+  }
+
+  async sendTestNotification() {
+    try {
+      // Don't send test notification in production or if user hasn't explicitly enabled notifications
+      if (window.location.hostname !== 'localhost') {
+        return;
+      }
       
-      this.broadcastChannel.addEventListener('message', (event) => {
-        if (event.data.type === 'NEW_LEAD') {
-          this.showNotification(event.data.title, event.data.options);
-        }
+      console.log('🧪 Sending test notification...');
+      await this.showNotification('🎉 Notifications Enabled!', {
+        body: 'You will now receive notifications for new leads',
+        tag: 'test-notification',
+        requireInteraction: false,
+        silent: true // Don't make sound for test
       });
+    } catch (error) {
+      console.error('❌ Error sending test notification:', error);
     }
   }
 
   async showNotification(title, options = {}) {
     if (this.permission !== 'granted') {
-      console.warn('Cannot show notification: permission not granted');
+      console.warn('⚠️ Cannot show notification: permission not granted');
       return false;
     }
 
     try {
-      // Prepare notification options
+      console.log('🔔 Showing notification:', title, options);
+
+      // Prepare notification options with defaults
       const notificationOptions = {
         body: options.body || 'A new lead has been added to the system',
         icon: options.icon || '/fav.png',
         badge: options.badge || '/fav.png',
         tag: options.tag || 'lead-notification',
-        requireInteraction: true,
-        actions: [
+        requireInteraction: options.requireInteraction !== false,
+        actions: options.actions || [
           {
             action: 'view',
             title: 'View Lead'
@@ -112,45 +206,89 @@ class NotificationService {
         ...options
       };
 
-      // Show notification through service worker
+      let notificationShown = false;
+
+      // Try to show notification through service worker first
       if (this.registration) {
-        // Send message to service worker to show notification
-        if (navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            type: 'SHOW_NOTIFICATION',
-            title: title,
-            options: notificationOptions
-          });
-        } else {
-          // Fallback to direct notification if no controller
-          await this.registration.showNotification(title, notificationOptions);
+        try {
+          console.log('📤 Sending notification to service worker...');
+          
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+              type: 'SHOW_NOTIFICATION',
+              title: title,
+              options: notificationOptions
+            });
+            notificationShown = true;
+            console.log('✅ Notification sent to service worker');
+          } else {
+            // Fallback to direct service worker notification
+            await this.registration.showNotification(title, notificationOptions);
+            notificationShown = true;
+            console.log('✅ Notification shown via service worker registration');
+          }
+        } catch (swError) {
+          console.warn('⚠️ Service worker notification failed:', swError);
         }
-      } else {
-        // Fallback to browser notification
-        new Notification(title, notificationOptions);
       }
 
-      return true;
+      // Fallback to browser notification if service worker failed
+      if (!notificationShown) {
+        console.log('🔔 Falling back to browser notification...');
+        const notification = new Notification(title, notificationOptions);
+        
+        notification.onclick = () => {
+          console.log('👆 Notification clicked');
+          window.focus();
+          notification.close();
+          
+          // Navigate to leads page if not already there
+          if (window.location.pathname !== '/leads') {
+            window.location.href = '/leads';
+          }
+        };
+
+        // Auto close after 10 seconds
+        setTimeout(() => {
+          notification.close();
+        }, 10000);
+        
+        notificationShown = true;
+        console.log('✅ Browser notification shown');
+      }
+
+      return notificationShown;
     } catch (error) {
-      console.error('Error showing notification:', error);
+      console.error('❌ Error showing notification:', error);
       return false;
     }
   }
 
   async sendLeadNotification(leadData) {
     if (!this.initialized) {
-      console.warn('Notification service not initialized');
-      return;
+      console.warn('⚠️ Notification service not initialized, attempting to initialize...');
+      await this.initialize();
+      
+      if (!this.initialized) {
+        console.error('❌ Cannot send notification: service not initialized');
+        return;
+      }
     }
 
     try {
+      console.log('🚀 Sending lead notification for:', leadData.name);
+
       // Prepare notification data
       const title = '🚀 New Lead Added!';
+      const servicesList = Array.isArray(leadData.requiredServices) 
+        ? leadData.requiredServices.join(', ') 
+        : 'Services not specified';
+        
       const options = {
-        body: `${leadData.name} from ${leadData.city || 'Unknown City'}\nServices: ${leadData.requiredServices?.join(', ') || 'Not specified'}`,
+        body: `${leadData.name} from ${leadData.city || 'Unknown City'}\nServices: ${servicesList}`,
         icon: '/fav.png',
         badge: '/fav.png',
-        tag: 'new-lead',
+        tag: 'new-lead-' + (leadData.id || Date.now()),
         requireInteraction: true,
         data: {
           leadId: leadData.id,
@@ -160,31 +298,47 @@ class NotificationService {
           services: leadData.requiredServices,
           source: leadData.source,
           timestamp: Date.now(),
-          type: 'new_lead'
+          type: 'new_lead',
+          url: '/leads'
         }
       };
 
-      // Show notification in current window
+      // Show notification in current window/tab
       const success = await this.showNotification(title, options);
 
       if (success) {
-        console.log('Lead notification sent successfully');
+        console.log('✅ Lead notification sent successfully');
         
         // Broadcast to other tabs/windows using BroadcastChannel
         if (this.broadcastChannel) {
-          this.broadcastChannel.postMessage({
-            type: 'NEW_LEAD',
-            title: title,
-            options: options
-          });
+          try {
+            this.broadcastChannel.postMessage({
+              type: 'NEW_LEAD',
+              title: title,
+              options: options,
+              fromCurrentTab: true // Flag to identify the source tab
+            });
+            console.log('📡 Notification broadcasted to other tabs');
+          } catch (broadcastError) {
+            console.error('❌ Error broadcasting notification:', broadcastError);
+          }
         }
 
-        // Also store in localStorage for persistence
+        // Store notification for offline users or missed notifications
         this.storeNotificationForOfflineUsers(leadData);
+        
+        // Notify subscribers (if any components are listening)
+        this.notifySubscribers({
+          type: 'lead_notification_sent',
+          leadData: leadData,
+          timestamp: Date.now()
+        });
+      } else {
+        console.error('❌ Failed to send lead notification');
       }
 
     } catch (error) {
-      console.error('Error sending lead notification:', error);
+      console.error('❌ Error sending lead notification:', error);
     }
   }
 
@@ -193,29 +347,39 @@ class NotificationService {
       // Store notification data for users who might be offline
       const notifications = JSON.parse(localStorage.getItem('pending-notifications') || '[]');
       
-      notifications.push({
-        id: `lead-${leadData.id}-${Date.now()}`,
+      const notificationData = {
+        id: `lead-${leadData.id || Date.now()}-${Date.now()}`,
         type: 'new_lead',
         leadData: leadData,
         timestamp: Date.now(),
-        shown: false
-      });
+        shown: false,
+        expires: Date.now() + (24 * 60 * 60 * 1000) // Expire after 24 hours
+      };
+      
+      notifications.push(notificationData);
 
-      // Keep only last 10 notifications
-      if (notifications.length > 10) {
-        notifications.splice(0, notifications.length - 10);
-      }
+      // Clean up expired and keep only last 20 notifications
+      const validNotifications = notifications
+        .filter(n => n.expires > Date.now())
+        .slice(-20);
 
-      localStorage.setItem('pending-notifications', JSON.stringify(notifications));
+      localStorage.setItem('pending-notifications', JSON.stringify(validNotifications));
+      console.log('💾 Notification stored for offline users');
     } catch (error) {
-      console.error('Error storing notification for offline users:', error);
+      console.error('❌ Error storing notification for offline users:', error);
     }
   }
 
   async checkPendingNotifications() {
     try {
       const notifications = JSON.parse(localStorage.getItem('pending-notifications') || '[]');
-      const unshownNotifications = notifications.filter(n => !n.shown);
+      const unshownNotifications = notifications.filter(n => 
+        !n.shown && 
+        n.expires > Date.now() &&
+        Date.now() - n.timestamp < (5 * 60 * 1000) // Only show notifications from last 5 minutes
+      );
+
+      console.log(`📬 Found ${unshownNotifications.length} pending notifications`);
 
       for (const notification of unshownNotifications) {
         if (notification.type === 'new_lead' && notification.leadData) {
@@ -227,9 +391,12 @@ class NotificationService {
       }
 
       // Update localStorage
-      localStorage.setItem('pending-notifications', JSON.stringify(notifications));
+      if (unshownNotifications.length > 0) {
+        localStorage.setItem('pending-notifications', JSON.stringify(notifications));
+        console.log('📬 Processed pending notifications');
+      }
     } catch (error) {
-      console.error('Error checking pending notifications:', error);
+      console.error('❌ Error checking pending notifications:', error);
     }
   }
 
@@ -248,7 +415,7 @@ class NotificationService {
       try {
         callback(data);
       } catch (error) {
-        console.error('Error in notification subscriber:', error);
+        console.error('❌ Error in notification subscriber:', error);
       }
     });
   }
@@ -263,17 +430,33 @@ class NotificationService {
     return this.permission;
   }
 
+  // Force re-initialization
+  async reinitialize() {
+    console.log('🔄 Forcing notification service re-initialization...');
+    this.initialized = false;
+    this.retryCount = 0;
+    await this.initialize();
+  }
+
   // Cleanup
   destroy() {
     if (this.broadcastChannel) {
       this.broadcastChannel.close();
+      this.broadcastChannel = null;
     }
     
     this.subscribers.clear();
     this.initialized = false;
+    console.log('🧹 Notification service destroyed');
   }
 }
 
 // Create and export singleton instance
 const notificationService = new NotificationService();
+
+// Make it available globally for debugging
+if (typeof window !== 'undefined') {
+  window.notificationService = notificationService;
+}
+
 export default notificationService;

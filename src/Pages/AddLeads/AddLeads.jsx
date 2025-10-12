@@ -130,19 +130,50 @@ const AddLeads = () => {
         createdBy: userDetails?.name || user?.email || 'Unknown User'
       };
       
-      // Save to Firebase
+      // Save to Firebase first
+      console.log('💾 Saving lead to Firebase...');
       const docRef = await addDoc(collection(db, "Leads"), leadData);
       const savedLeadData = { ...leadData, id: docRef.id };
       
-      toast.success('Lead saved successfully');
+      toast.success('Lead saved successfully! 🎉');
+      console.log('✅ Lead saved with ID:', docRef.id);
 
-      // Send push notification to all app installations (no text notification)
+      // Send push notification to all app installations
       try {
+        console.log('🔔 Sending notification for lead:', savedLeadData.name);
+        
+        // Check if notification service is available
+        if (!notificationService) {
+          console.error('❌ Notification service not available');
+          throw new Error('Notification service not available');
+        }
+        
+        // Check if notification service is initialized
+        if (!notificationService.initialized) {
+          console.log('⚠️ Notification service not initialized, attempting to initialize...');
+          await notificationService.initialize();
+        }
+        
+        // Send the notification
         await notificationService.sendLeadNotification(savedLeadData);
-        console.log('Push notification sent to all devices');
+        console.log('✅ Notification sent successfully');
+        
+        // Show a success indicator for notifications
+        setTimeout(() => {
+          toast.info('📱 Notifications sent to all devices!', {
+            position: "bottom-right",
+            autoClose: 3000,
+          });
+        }, 1000);
+        
       } catch (notificationError) {
-        console.error('Failed to send push notification:', notificationError);
-        // Don't show error to user as lead was saved successfully
+        console.error('❌ Failed to send notification:', notificationError);
+        
+        // Show user-friendly message about notification failure
+        toast.warn('⚠️ Lead saved but notifications may not have been sent to all devices', {
+          position: "bottom-right",
+          autoClose: 5000,
+        });
       }
 
       // Clear all form fields after successful save
@@ -161,8 +192,8 @@ const AddLeads = () => {
       setSelectedSubSource("Select Sub Source");
       
     } catch (err) {
+      console.error('❌ Error saving lead:', err);
       toast.error('Something went wrong. Try Again!');
-      console.error('Save lead error:', err);
     } finally {
       setLoading(false);
     }

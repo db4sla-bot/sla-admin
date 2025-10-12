@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sla-admin-v1760274900379';
+const CACHE_NAME = 'sla-admin-v1760275467452';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -49,7 +49,7 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch event - Network first for dynamic content, cache first for static assets
+// Fetch event
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   
@@ -114,8 +114,10 @@ self.addEventListener('fetch', event => {
   }
 });
 
-// Handle messages from clients (for manual notifications)
+// Handle messages from clients (CRITICAL FOR NOTIFICATIONS)
 self.addEventListener('message', event => {
+  console.log('SW: Message received:', event.data);
+  
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
@@ -123,13 +125,15 @@ self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
     const { title, options } = event.data;
     
+    console.log('SW: Showing notification:', title, options);
+    
     const notificationOptions = {
       body: options.body || 'A new lead has been added',
-      icon: '/fav.png',
-      badge: '/fav.png',
-      tag: 'lead-notification',
-      requireInteraction: true,
-      actions: [
+      icon: options.icon || '/fav.png',
+      badge: options.badge || '/fav.png',
+      tag: options.tag || 'lead-notification',
+      requireInteraction: options.requireInteraction !== false,
+      actions: options.actions || [
         {
           action: 'view',
           title: 'View Lead',
@@ -142,20 +146,39 @@ self.addEventListener('message', event => {
       ],
       data: {
         url: '/leads',
-        leadId: options.leadId,
-        leadName: options.leadName,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        ...options.data
       },
       ...options
     };
 
-    self.registration.showNotification(title, notificationOptions);
+    // Show the notification
+    event.waitUntil(
+      self.registration.showNotification(title, notificationOptions)
+        .then(() => {
+          console.log('SW: Notification shown successfully');
+          
+          // Notify all clients that notification was shown
+          return self.clients.matchAll().then(clients => {
+            clients.forEach(client => {
+              client.postMessage({
+                type: 'NOTIFICATION_SHOWN',
+                title: title,
+                timestamp: Date.now()
+              });
+            });
+          });
+        })
+        .catch(error => {
+          console.error('SW: Error showing notification:', error);
+        })
+    );
   }
 });
 
 // Notification click event handler
 self.addEventListener('notificationclick', event => {
-  console.log('SW: Notification clicked:', event);
+  console.log('SW: Notification clicked:', event.notification.tag);
   
   event.notification.close();
 
@@ -165,25 +188,84 @@ self.addEventListener('notificationclick', event => {
   if (event.action === 'view') {
     targetUrl = notificationData.url || '/leads';
   } else if (event.action === 'dismiss') {
+    console.log('SW: Notification dismissed');
     return;
   } else {
-    targetUrl = notificationData.url || '/';
+    // Default click action
+    targetUrl = notificationData.url || '/leads';
   }
 
+  console.log('SW: Opening/focusing window with URL:', targetUrl);
+
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then(windowClients => {
-      // Check if there's already a window/tab open with the target URL
+    self.clients.matchAll({ 
+      type: 'window',
+      includeUncontrolled: true 
+    }).then(windowClients => {
+      console.log('SW: Found', windowClients.length, 'window clients');
+      
+      // Check if there's already a window/tab open
       for (let i = 0; i < windowClients.length; i++) {
         const client = windowClients[i];
-        if (client.url.includes(targetUrl.split('?')[0]) && 'focus' in client) {
+        console.log('SW: Checking client:', client.url);
+        
+        if (client.url.includes(window.location.origin) && 'focus' in client) {
+          console.log('SW: Focusing existing window');
+          
+          // Send message to client to navigate to the target URL
+          client.postMessage({
+            type: 'NAVIGATE_TO',
+            url: targetUrl
+          });
+          
           return client.focus();
         }
       }
       
       // If no window/tab is already open, open a new one
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
+      if (self.clients.openWindow) {
+        console.log('SW: Opening new window');
+        return self.clients.openWindow(targetUrl);
       }
+    }).catch(error => {
+      console.error('SW: Error handling notification click:', error);
     })
   );
 });
+
+// Push event handler (for future push notifications)
+self.addEventListener('push', event => {
+  console.log('SW: Push event received');
+  
+  if (event.data) {
+    try {
+      const pushData = event.data.json();
+      console.log('SW: Push data:', pushData);
+      
+      const title = pushData.title || 'New Notification';
+      const options = {
+        body: pushData.body || 'You have a new notification',
+        icon: '/fav.png',
+        badge: '/fav.png',
+        tag: pushData.tag || 'push-notification',
+        data: pushData.data || {}
+      };
+      
+      event.waitUntil(
+        self.registration.showNotification(title, options)
+      );
+    } catch (error) {
+      console.error('SW: Error handling push event:', error);
+    }
+  }
+});
+
+// Listen for navigation messages from notification clicks
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'NAVIGATE_TO') {
+    // This is handled by the client side
+    console.log('SW: Navigation message received for URL:', event.data.url);
+  }
+});
+
+console.log('SW: Service worker loaded and ready');
