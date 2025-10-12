@@ -1,0 +1,57 @@
+.pwa-update-toast-container {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+  border: none !important;
+}
+
+.pwa-update-toast {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px;
+}
+
+.pwa-update-message {
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.pwa-update-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.pwa-update-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.pwa-update-now {
+  background: white;
+  color: #667eea;
+}
+
+.pwa-update-now:hover {
+  background: #f8f9fa;
+  transform: translateY(-1px);
+}
+
+.pwa-update-later {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.pwa-update-later:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

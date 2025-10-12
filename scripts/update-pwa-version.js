@@ -9,23 +9,28 @@ const swPath = path.join(__dirname, '../public/sw.js');
 // Read the service worker file
 let swContent = fs.readFileSync(swPath, 'utf8');
 
-// Extract current version number
-const versionMatch = swContent.match(/const CACHE_NAME = 'sla-admin-v(\d+)'/);
-if (versionMatch) {
-  const currentVersion = parseInt(versionMatch[1]);
-  const newVersion = currentVersion + 1;
-  
-  // Replace with new version
-  swContent = swContent.replace(
-    /const CACHE_NAME = 'sla-admin-v\d+'/,
-    `const CACHE_NAME = 'sla-admin-v${newVersion}'`
-  );
-  
-  // Write back to file
-  fs.writeFileSync(swPath, swContent);
-  
-  console.log(`✅ Updated PWA cache version from v${currentVersion} to v${newVersion}`);
-  console.log('🔄 Your changes will now be visible in the PWA after refresh');
-} else {
-  console.log('❌ Could not find cache version in service worker');
-}
+// Generate new version with timestamp
+const timestamp = Date.now();
+const newVersion = `sla-admin-v${timestamp}`;
+
+// Replace cache name with new version
+swContent = swContent.replace(
+  /const CACHE_NAME = '[^']+'/,
+  `const CACHE_NAME = '${newVersion}'`
+);
+
+// Write back to file
+fs.writeFileSync(swPath, swContent);
+
+console.log(`✅ Updated PWA cache version to: ${newVersion}`);
+console.log('🔄 New version will be pushed to all installed apps');
+
+// Also update package.json version for tracking
+const packagePath = path.join(__dirname, '../package.json');
+const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+const currentVersion = packageJson.version.split('.');
+currentVersion[2] = parseInt(currentVersion[2]) + 1; // Increment patch version
+packageJson.version = currentVersion.join('.');
+fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2));
+
+console.log(`📦 Updated package.json version to: ${packageJson.version}`);

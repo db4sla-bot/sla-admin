@@ -57,6 +57,7 @@ import Appointments from './Pages/Appointments/Appointments'
 import PWAInstallPrompt from './Components/PWAInstallPrompt/PWAInstallPrompt'
 import PWAUpdateNotification from './Components/PWAUpdateNotification/PWAUpdateNotification'
 import MonthlyExpenses from './Pages/MonthlyExpenses/MonthlyExpenses'
+import PWAUpdater from './Components/PWAUpdater/PWAUpdater'
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -267,6 +268,7 @@ const App = () => {
           </div>
           <PWAInstallPrompt />
           <PWAUpdateNotification />
+          <PWAUpdater />
         </>
       ) : (
         <Login />
