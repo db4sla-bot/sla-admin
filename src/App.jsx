@@ -6,6 +6,7 @@ import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-d
 import {
   ChevronDown,
   ChevronRight,
+  FolderOpenDot,
   Inbox as InboxIcon,
   LayoutDashboard,
   LogOut,
@@ -42,7 +43,6 @@ import Materials from './Pages/Materials/Materials'
 import QRCodeGenerator from './Pages/QRCodeGenerator/QRCodeGenerator'
 import ToDoList from './Pages/ToDoList/ToDoList'
 import DailyExpenses from './Pages/DailyExpenses/DailyExpenses'
-import Inbox from './Pages/Inbox/Inbox'
 import MaterialsReport from './Pages/MaterialsReport/MaterialsReport'
 import MaterialsInvestment from './Pages/MaterialsInvestment/MaterialsInvestment'
 import Payroll from './Pages/Payroll/Payroll'
@@ -54,6 +54,7 @@ import Quotations from './Pages/Quotations/Quotations'
 import EditQuotation from './Pages/EditQuotation/EditQuotation'
 import AddAppointment from './Pages/AddAppointment/AddAppointment'
 import Appointments from './Pages/Appointments/Appointments'
+import Projects from './Pages/Projects/Projects'
 import PWAInstallPrompt from './Components/PWAInstallPrompt/PWAInstallPrompt'
 import PWAUpdateNotification from './Components/PWAUpdateNotification/PWAUpdateNotification'
 import MonthlyExpenses from './Pages/MonthlyExpenses/MonthlyExpenses'
@@ -169,8 +170,8 @@ const App = () => {
                     </div>
 
                     <div className="dashboard-menu-con">
-                      <NavLink className="dashboard-menu-item" to="/inbox" onClick={handleMenuLinkClick}>
-                        <InboxIcon className="id-icon" /> Inbox{' '}
+                      <NavLink className="dashboard-menu-item" to="/projects" onClick={handleMenuLinkClick}>
+                        <FolderOpenDot className="id-icon" /> Projects{' '}
                         <ChevronRight className="icon-arrow" />
                       </NavLink>
                     </div>
@@ -258,12 +259,12 @@ const App = () => {
                 <Route path="/passwords" element={<Passwords />} />
                 <Route path="/dailyexpenses" element={<DailyExpenses />} />
                 <Route path="/monthlyexpenses" element={<MonthlyExpenses />} />
-                <Route path="/inbox" element={<Inbox />} />
                 <Route path="/materialsinvestment" element={<MaterialsInvestment />} />
                 <Route path="/payroll" element={<Payroll />} />
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/appointments" element={<Appointments />} />
                 <Route path="/addappointment" element={<AddAppointment />} />
+                <Route path="/projects" element={<Projects />} />
               </Routes>
             </div>
           </div>

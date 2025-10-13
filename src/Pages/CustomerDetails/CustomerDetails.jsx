@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from "react-router-dom";
-import { doc, getDoc, updateDoc, collection, getDocs, addDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../../Firebase";
 import './CustomerDetails.css';
 import Hamburger from "../../Components/Hamburger/Hamburger";
@@ -104,7 +104,38 @@ const CustomerDetails = () => {
     }
   }, [customer]);
 
-  // Simplified Add work function
+  // Function to generate unique project ID
+  const generateProjectId = async () => {
+    const currentYear = new Date().getFullYear();
+    const prefix = `sla_pr_${currentYear}_`;
+    
+    try {
+      // Get the latest project to determine the next number
+      const projectsQuery = query(
+        collection(db, "Projects"),
+        orderBy("createdAt", "desc"),
+        limit(1)
+      );
+      const querySnapshot = await getDocs(projectsQuery);
+      
+      let nextNumber = 1;
+      if (!querySnapshot.empty) {
+        const latestProject = querySnapshot.docs[0].data();
+        if (latestProject.projectId && latestProject.projectId.startsWith(prefix)) {
+          const lastNumber = parseInt(latestProject.projectId.split('_').pop());
+          nextNumber = lastNumber + 1;
+        }
+      }
+      
+      return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
+    } catch (error) {
+      console.error("Error generating project ID:", error);
+      // Fallback to timestamp-based ID
+      return `${prefix}${Date.now()}`;
+    }
+  };
+
+  // Enhanced Add work function with project creation
   const handleAddWork = async () => {
     if (!selectedService) {
       toast.error("Please select a service");
@@ -122,12 +153,16 @@ const CustomerDetails = () => {
       const currentTime = new Date().toLocaleTimeString();
       const username = userDetails?.name || "Unknown User";
       
+      // Generate unique project ID
+      const projectId = await generateProjectId();
+      
       const newWorkItem = {
         service: selectedService,
         description: workDescription.trim(),
         addedBy: username,
         date: currentDate,
-        time: currentTime
+        time: currentTime,
+        projectId: projectId // Add project ID to work item
       };
       
       const newWork = [...(customer.work || []), newWorkItem];
@@ -139,16 +174,40 @@ const CustomerDetails = () => {
           name: `${selectedService}: ${workDescription.trim()}`,
           service: selectedService,
           description: workDescription.trim(),
+          projectId: projectId,
           date: currentDate,
           time: currentTime,
           addedBy: username,
         },
       ];
       
+      // Update customer with new work
       await updateDoc(docRef, { 
         work: newWork,
         activity: newActivity
       });
+      
+      // Create new project
+      const projectData = {
+        projectId: projectId,
+        customerId: customerid,
+        customerName: customer.name || 'Unknown Customer',
+        customerMobile: customer.mobile || '',
+        customerEmail: customer.email || '',
+        customerAddress: customer.address || '',
+        customerCity: customer.city || '',
+        customerState: customer.state || '',
+        service: selectedService,
+        workDescription: workDescription.trim(),
+        status: 'Active',
+        createdBy: username,
+        createdAt: new Date(),
+        createdDate: currentDate,
+        createdTime: currentTime,
+        updatedAt: new Date()
+      };
+      
+      await addDoc(collection(db, "Projects"), projectData);
       
       setCustomer((prev) => ({
         ...prev,
@@ -161,10 +220,10 @@ const CustomerDetails = () => {
       setWorkDescription("");
       setShowServiceDropdown(false);
       
-      toast.success("Work added successfully!");
+      toast.success(`Work added and Project ${projectId} created successfully!`);
     } catch (err) {
-      console.error("Error adding work:", err);
-      toast.error("Failed to add work!");
+      console.error("Error adding work and creating project:", err);
+      toast.error("Failed to add work and create project!");
     }
     setLoading(false);
   };
