@@ -58,7 +58,6 @@ import PWAInstallPrompt from './Components/PWAInstallPrompt/PWAInstallPrompt'
 import PWAUpdateNotification from './Components/PWAUpdateNotification/PWAUpdateNotification'
 import MonthlyExpenses from './Pages/MonthlyExpenses/MonthlyExpenses'
 import PWAUpdater from './Components/PWAUpdater/PWAUpdater'
-import notificationService from './utils/notificationService';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -134,38 +133,6 @@ const App = () => {
     }
   }, [userAccess]);
   
-  useEffect(() => {
-    // Initialize notification service when app loads
-    const initNotifications = async () => {
-      try {
-        await notificationService.initialize();
-        console.log('Notification service initialized');
-      } catch (error) {
-        console.error('Failed to initialize notifications:', error);
-      }
-    };
-
-    if (isAuthenticated) {
-      initNotifications();
-    }
-
-    // Listen for navigation messages from service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'NAVIGATE_TO') {
-          navigate(event.data.url);
-        }
-      });
-    }
-
-    // Cleanup on unmount
-    return () => {
-      if (isAuthenticated) {
-        notificationService.destroy();
-      }
-    };
-  }, [isAuthenticated, navigate]);
-
   if (loading) {
     return <Loading />
   }

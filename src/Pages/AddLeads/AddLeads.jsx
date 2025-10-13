@@ -8,7 +8,6 @@ import { db } from '../../Firebase'
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { useAppContext } from '../../Context';
-import notificationService from '../../utils/notificationService'; // Fixed import path
 
 const AddLeads = () => {
   const { user, userDetails, userDetailsLoading } = useAppContext();
@@ -132,23 +131,8 @@ const AddLeads = () => {
       
       // Save to Firebase
       const docRef = await addDoc(collection(db, "Leads"), leadData);
-      const savedLeadData = { ...leadData, id: docRef.id };
       
-      toast.success('Lead saved successfully! 🎉');
-
-      // Send notification to ALL devices globally (this now works across all devices)
-      try {
-        console.log('🌐 Sending notifications to all devices...');
-        await notificationService.sendLeadNotification(savedLeadData);
-        console.log('✅ Notifications sent to all devices successfully');
-        
-        toast.info('📱 Notifications sent to all devices!', {
-          position: "bottom-right",
-          autoClose: 3000,
-        });
-      } catch (notificationError) {
-        console.error('❌ Failed to send notification:', notificationError);
-      }
+      toast.success('Lead saved successfully!');
 
       // Clear all form fields after successful save
       setFormData({
