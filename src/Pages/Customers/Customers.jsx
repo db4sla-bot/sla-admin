@@ -2,9 +2,9 @@
 import React, { useEffect, useState } from "react";
 import Hamburger from "../../Components/Hamburger/Hamburger";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Eye, Search, Users, Plus, Filter, Calendar } from "lucide-react";
+import { Eye, Search, Users, Plus, Filter, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import "./Customers.css";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../Firebase";
 
 const Customers = () => {
@@ -12,8 +12,21 @@ const Customers = () => {
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState(""); // New date filter
+  const [fromDateFilter, setFromDateFilter] = useState("");
+  const [toDateFilter, setToDateFilter] = useState("");
+  const [servicesFilter, setServicesFilter] = useState("");
   const [loading, setLoading] = useState(true);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
+  
+  // Customer counts
+  const [customerCounts, setCustomerCounts] = useState({
+    total: 0,
+    filtered: 0
+  });
+  
   const navigate = useNavigate();
 
   const colors = [
@@ -27,30 +40,72 @@ const Customers = () => {
     "linear-gradient(135deg, #a18cd1, #fbc2eb)",
   ];
 
+  // Services list for filter
+  const servicesList = [
+    "Invisible Grills",
+    "Mosquito Mesh", 
+    "Cloth Hangers",
+    "Artificial Grass",
+    "Bird Spikes"
+  ];
+
   useEffect(() => {
     const fetchCustomers = async () => {
       setLoading(true);
       try {
-        const querySnapshot = await getDocs(collection(db, "Customers"));
+        // Fetch customers with latest first ordering
+        const customersQuery = query(
+          collection(db, "Customers"),
+          orderBy("createdAt", "desc")
+        );
+        const querySnapshot = await getDocs(customersQuery);
         const customersData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
 
-        // Sort customers by name
-        customersData.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-
         setCustomers(customersData);
         setFilteredCustomers(customersData);
+        
+        // Update counts
+        setCustomerCounts({
+          total: customersData.length,
+          filtered: customersData.length
+        });
       } catch (error) {
         console.error("Error fetching customers:", error);
+        // If orderBy fails, fetch without ordering and sort manually
+        try {
+          const querySnapshot = await getDocs(collection(db, "Customers"));
+          const customersData = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          // Sort manually by createdAt (latest first)
+          customersData.sort((a, b) => {
+            const aDate = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0);
+            const bDate = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0);
+            return bDate - aDate;
+          });
+
+          setCustomers(customersData);
+          setFilteredCustomers(customersData);
+          
+          setCustomerCounts({
+            total: customersData.length,
+            filtered: customersData.length
+          });
+        } catch (fallbackError) {
+          console.error("Fallback fetch also failed:", fallbackError);
+        }
       }
       setLoading(false);
     };
     fetchCustomers();
   }, []);
 
-  // Filter customers based on search, payment status, and date
+  // Enhanced filter customers based on search, payment status, date range, and services
   useEffect(() => {
     let filtered = [...customers];
 
@@ -65,46 +120,138 @@ const Customers = () => {
       );
     }
 
-    // Payment status filter
+    // Payment status filter - Updated with only 3 options
     if (paymentStatusFilter) {
       filtered = filtered.filter(customer => {
         const paymentSummary = getPaymentSummary(customer);
         
         if (paymentStatusFilter === 'pending') {
-          return paymentSummary.pendingAmount > 0 || paymentSummary.totalProjects === 0;
+          // Pending: Has projects but not fully paid OR no projects
+          return paymentSummary.totalProjects === 0 || paymentSummary.pendingAmount > 0;
         } else if (paymentStatusFilter === 'done') {
+          // Done: Has projects and fully paid
           return paymentSummary.totalProjects > 0 && paymentSummary.pendingAmount === 0;
+        } else if (paymentStatusFilter === 'exception') {
+          // Exception: Has partial payments (some paid, some pending)
+          return paymentSummary.totalProjects > 0 && 
+                 paymentSummary.pendingAmount > 0 && 
+                 paymentSummary.pendingAmount < paymentSummary.totalAmount;
         }
         
         return true;
       });
     }
 
-    // Date filter
-    if (dateFilter) {
+    // From date filter
+    if (fromDateFilter) {
       filtered = filtered.filter(customer => {
         if (!customer.createdAt) return false;
         
-        // Handle different date formats
         let customerDate;
         if (typeof customer.createdAt === 'string') {
           customerDate = new Date(customer.createdAt);
         } else if (customer.createdAt.toDate) {
-          // Firestore timestamp
           customerDate = customer.createdAt.toDate();
         } else {
           customerDate = new Date(customer.createdAt);
         }
         
-        const filterDate = new Date(dateFilter);
+        const filterFromDate = new Date(fromDateFilter);
+        return customerDate >= filterFromDate;
+      });
+    }
+
+    // To date filter
+    if (toDateFilter) {
+      filtered = filtered.filter(customer => {
+        if (!customer.createdAt) return false;
         
-        // Compare dates (ignore time)
-        return customerDate.toDateString() === filterDate.toDateString();
+        let customerDate;
+        if (typeof customer.createdAt === 'string') {
+          customerDate = new Date(customer.createdAt);
+        } else if (customer.createdAt.toDate) {
+          customerDate = customer.createdAt.toDate();
+        } else {
+          customerDate = new Date(customer.createdAt);
+        }
+        
+        const filterToDate = new Date(toDateFilter);
+        filterToDate.setHours(23, 59, 59, 999); // End of day
+        return customerDate <= filterToDate;
+      });
+    }
+
+    // Services filter
+    if (servicesFilter) {
+      filtered = filtered.filter(customer => {
+        if (!customer.lookingFor || !Array.isArray(customer.lookingFor)) return false;
+        return customer.lookingFor.includes(servicesFilter);
       });
     }
 
     setFilteredCustomers(filtered);
-  }, [searchTerm, paymentStatusFilter, dateFilter, customers]);
+    setCurrentPage(1); // Reset to first page when filters change
+    
+    // Update filtered count
+    setCustomerCounts(prev => ({
+      ...prev,
+      filtered: filtered.length
+    }));
+  }, [searchTerm, paymentStatusFilter, fromDateFilter, toDateFilter, servicesFilter, customers]);
+
+  // Pagination calculations
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCustomers = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+
+  // Pagination handlers
+  const goToPage = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
+  const getPaginationNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -114,14 +261,25 @@ const Customers = () => {
     setPaymentStatusFilter(e.target.value);
   };
 
-  const handleDateFilter = (e) => {
-    setDateFilter(e.target.value);
+  const handleFromDateFilter = (e) => {
+    setFromDateFilter(e.target.value);
+  };
+
+  const handleToDateFilter = (e) => {
+    setToDateFilter(e.target.value);
+  };
+
+  const handleServicesFilter = (e) => {
+    setServicesFilter(e.target.value);
   };
 
   const clearFilters = () => {
     setSearchTerm('');
     setPaymentStatusFilter('');
-    setDateFilter('');
+    setFromDateFilter('');
+    setToDateFilter('');
+    setServicesFilter('');
+    setCurrentPage(1);
   };
 
   // Calculate payment summary for a customer
@@ -170,7 +328,7 @@ const Customers = () => {
         <div className="customers-top-bar-container">
           <Hamburger />
           <div className="customers-breadcrumps-container">
-            <h1>Customers</h1>
+            <h1>Customers ({customerCounts.total})</h1>
           </div>
         </div>
         <div className="customers-loading">
@@ -187,7 +345,7 @@ const Customers = () => {
       <div className="customers-top-bar-container">
         <Hamburger />
         <div className="customers-breadcrumps-container">
-          <h1>Customers</h1>
+          <h1>Customers ({customerCounts.total})</h1>
         </div>
         <div className="customers-actions-container">
           <NavLink to="/addcustomer" className="customers-add-btn">
@@ -197,13 +355,27 @@ const Customers = () => {
       </div>
 
       <div className="customers-main-container">
-        {/* Header */}
+        {/* Header with Counts */}
         <div className="customers-header">
-          <h1>Customer Management</h1>
-          <p>Manage and track your customer database</p>
+          <div className="customers-header-info">
+            <h1>Customer Management</h1>
+            <p>Manage and track your customer database</p>
+          </div>
+          <div className="customers-counts-display">
+            <div className="customers-count-card total">
+              <div className="customers-count-number">{customerCounts.total}</div>
+              <div className="customers-count-label">Total Customers</div>
+            </div>
+            {(searchTerm || paymentStatusFilter || fromDateFilter || toDateFilter || servicesFilter) && (
+              <div className="customers-count-card filtered">
+                <div className="customers-count-number">{customerCounts.filtered}</div>
+                <div className="customers-count-label">Filtered Results</div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Filters */}
+        {/* Enhanced Filters */}
         <div className="customers-filters">
           <div className="customers-search-container">
             <Search className="customers-search-icon" />
@@ -217,17 +389,34 @@ const Customers = () => {
           </div>
 
           <div className="customers-filter-row">
-            <div className="customers-date-filter">
-              <Calendar className="customers-calendar-icon" />
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={handleDateFilter}
-                className="customers-date-input"
-                placeholder="Filter by creation date"
-              />
+            {/* Date Range Filter Group */}
+            <div className="customers-date-filter-group">
+              <div className="customers-date-filter">
+                <Calendar className="customers-calendar-icon" />
+                <input
+                  type="date"
+                  value={fromDateFilter}
+                  onChange={handleFromDateFilter}
+                  className="customers-date-input"
+                  placeholder="From date"
+                />
+                <label className="customers-date-label">From</label>
+              </div>
+
+              <div className="customers-date-filter">
+                <Calendar className="customers-calendar-icon" />
+                <input
+                  type="date"
+                  value={toDateFilter}
+                  onChange={handleToDateFilter}
+                  className="customers-date-input"
+                  placeholder="To date"
+                />
+                <label className="customers-date-label">To</label>
+              </div>
             </div>
 
+            {/* Updated Payment Status Filter */}
             <div className="customers-payment-status-filter">
               <select
                 value={paymentStatusFilter}
@@ -235,8 +424,23 @@ const Customers = () => {
                 className="customers-payment-status-select"
               >
                 <option value="">All Payment Status</option>
-                <option value="pending">Pending Payments</option>
-                <option value="done">Done Payments</option>
+                <option value="pending">⏳ Pending</option>
+                <option value="exception">⚠️ Exception</option>
+                <option value="done">✅ Done</option>
+              </select>
+            </div>
+
+            {/* Services Filter */}
+            <div className="customers-services-filter">
+              <select
+                value={servicesFilter}
+                onChange={handleServicesFilter}
+                className="customers-services-select"
+              >
+                <option value="">All Services</option>
+                {servicesList.map(service => (
+                  <option key={service} value={service}>{service}</option>
+                ))}
               </select>
             </div>
 
@@ -247,19 +451,31 @@ const Customers = () => {
           </div>
         </div>
 
-        {/* Results Summary */}
+        {/* Enhanced Results Summary with Pagination Info */}
         <div className="customers-summary">
-          <p>
-            Showing {filteredCustomers.length} of {customers.length} customers
-          </p>
-          {(searchTerm || paymentStatusFilter || dateFilter) && (
-            <p className="customers-filter-info">Filters applied</p>
+          <div className="customers-summary-info">
+            <p>
+              Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, customerCounts.filtered)} of {customerCounts.filtered} customers
+              {customerCounts.filtered !== customerCounts.total && (
+                <span className="customers-total-info"> (filtered from {customerCounts.total} total)</span>
+              )}
+            </p>
+            {(searchTerm || paymentStatusFilter || fromDateFilter || toDateFilter || servicesFilter) && (
+              <p className="customers-filter-info">
+                {customerCounts.filtered} results match your filters
+              </p>
+            )}
+          </div>
+          {totalPages > 1 && (
+            <div className="customers-page-info">
+              Page {currentPage} of {totalPages}
+            </div>
           )}
         </div>
 
         {/* Customers Table */}
         <div className="customers-table-container">
-          {filteredCustomers.length > 0 ? (
+          {currentCustomers.length > 0 ? (
             <table className="customers-table">
               <thead>
                 <tr>
@@ -274,7 +490,7 @@ const Customers = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredCustomers.map((customer, index) => {
+                {currentCustomers.map((customer, index) => {
                   const bgColor = colors[index % colors.length];
                   const firstLetter = customer.name ? customer.name.charAt(0).toUpperCase() : "?";
                   const paymentSummary = getPaymentSummary(customer);
@@ -424,11 +640,17 @@ const Customers = () => {
               <div className="customers-empty-icon">👥</div>
               <h3>No customers found</h3>
               <p>
-                {searchTerm || paymentStatusFilter || dateFilter
-                  ? "Try adjusting your search criteria or filters"
+                {searchTerm || paymentStatusFilter || fromDateFilter || toDateFilter || servicesFilter
+                  ? `No customers match your current filters. Try adjusting your search criteria.`
                   : "Start by adding your first customer to manage your client database"}
               </p>
-              {!searchTerm && !paymentStatusFilter && !dateFilter && (
+              {customerCounts.total > 0 && (searchTerm || paymentStatusFilter || fromDateFilter || toDateFilter || servicesFilter) && (
+                <button className="customers-clear-filters-btn" onClick={clearFilters}>
+                  <Filter />
+                  Clear All Filters to See All {customerCounts.total} Customers
+                </button>
+              )}
+              {customerCounts.total === 0 && (
                 <NavLink to="/addcustomer" className="customers-empty-add-btn">
                   <Plus /> Add New Customer
                 </NavLink>
@@ -436,6 +658,56 @@ const Customers = () => {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="customers-pagination">
+            <div className="customers-pagination-info">
+              <span>
+                Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, customerCounts.filtered)} of {customerCounts.filtered} customers
+              </span>
+            </div>
+            
+            <div className="customers-pagination-controls">
+              <button
+                className="customers-page-btn customers-page-prev"
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                title="Previous page"
+              >
+                <ChevronLeft size={20} />
+                Previous
+              </button>
+              
+              <div className="customers-page-numbers">
+                {getPaginationNumbers().map((page, index) => (
+                  <React.Fragment key={index}>
+                    {page === '...' ? (
+                      <span className="customers-page-ellipsis">...</span>
+                    ) : (
+                      <button
+                        className={`customers-page-number ${currentPage === page ? 'active' : ''}`}
+                        onClick={() => goToPage(page)}
+                      >
+                        {page}
+                      </button>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+              
+              <button
+                className="customers-page-btn customers-page-next"
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                title="Next page"
+              >
+                Next
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
