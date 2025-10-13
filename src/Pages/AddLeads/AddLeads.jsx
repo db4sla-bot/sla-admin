@@ -8,7 +8,7 @@ import { db } from '../../Firebase'
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { toast } from "react-toastify";
 import { useAppContext } from '../../Context';
-import notificationService from '../../utils/notificationService';
+import notificationService from '../../utils/notificationService'; // Fixed import path
 
 const AddLeads = () => {
   const { user, userDetails, userDetailsLoading } = useAppContext();
@@ -130,56 +130,19 @@ const AddLeads = () => {
         createdBy: userDetails?.name || user?.email || 'Unknown User'
       };
       
-      // Save to Firebase first
-      console.log('💾 Saving lead to Firebase...');
+      // Save to Firebase
       const docRef = await addDoc(collection(db, "Leads"), leadData);
       const savedLeadData = { ...leadData, id: docRef.id };
       
       toast.success('Lead saved successfully! 🎉');
-      console.log('✅ Lead saved with ID:', docRef.id);
 
-      // Send push notification to ALL devices globally
+      // Send notification
       try {
-        console.log('🌐 Sending notifications to all devices...');
-        
-        // Show immediate toast
-        toast.info('📱 Sending notifications to all devices...', {
-          position: "bottom-right",
-          autoClose: 2000,
-        });
-        
-        // Check if notification service is available
-        if (!notificationService) {
-          console.error('❌ Notification service not available');
-          throw new Error('Notification service not available');
-        }
-        
-        // Check if notification service is initialized
-        if (!notificationService.initialized) {
-          console.log('⚠️ Notification service not initialized, attempting to initialize...');
-          await notificationService.initialize();
-        }
-        
-        // Send the notification to ALL devices
+        console.log('🔔 Attempting to send notification...');
         await notificationService.sendLeadNotification(savedLeadData);
-        console.log('✅ Notifications sent to all devices');
-        
-        // Show success indicator for notifications
-        setTimeout(() => {
-          toast.success('🌐 Notifications sent to all installed devices!', {
-            position: "bottom-right",
-            autoClose: 4000,
-          });
-        }, 2000);
-        
+        console.log('✅ Notification sent successfully');
       } catch (notificationError) {
-        console.error('❌ Failed to send notifications:', notificationError);
-        
-        // Show user-friendly message about notification failure
-        toast.warn('⚠️ Lead saved but notifications may not have been sent to all devices', {
-          position: "bottom-right",
-          autoClose: 5000,
-        });
+        console.error('❌ Failed to send notification:', notificationError);
       }
 
       // Clear all form fields after successful save
@@ -198,8 +161,8 @@ const AddLeads = () => {
       setSelectedSubSource("Select Sub Source");
       
     } catch (err) {
-      console.error('❌ Error saving lead:', err);
       toast.error('Something went wrong. Try Again!');
+      console.error('Save lead error:', err);
     } finally {
       setLoading(false);
     }

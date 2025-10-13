@@ -59,14 +59,12 @@ import PWAUpdateNotification from './Components/PWAUpdateNotification/PWAUpdateN
 import MonthlyExpenses from './Pages/MonthlyExpenses/MonthlyExpenses'
 import PWAUpdater from './Components/PWAUpdater/PWAUpdater'
 import notificationService from './utils/notificationService';
-import NotificationPermission from './Components/NotificationPermission/NotificationPermission';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
   const [userAccess, setUserAccess] = useState([])
   const [filteredMenuItems, setFilteredMenuItems] = useState([])
-  const [notificationInitialized, setNotificationInitialized] = useState(false);
   const location = useLocation();
 
   const handleMenuSidebarClose = () => {
@@ -139,31 +137,27 @@ const App = () => {
     // Initialize notification service when app loads
     const initNotifications = async () => {
       try {
-        console.log('🚀 Starting notification service initialization...');
         await notificationService.initialize();
-        console.log('✅ Notification service initialized');
+        console.log('Notification service initialized');
         
         // Check for any pending notifications
         await notificationService.checkPendingNotifications();
-        console.log('📬 Checked pending notifications');
-        
-        console.log('🌐 Global notification system is now active');
       } catch (error) {
-        console.error('❌ Failed to initialize notifications:', error);
+        console.error('Failed to initialize notifications:', error);
       }
     };
 
-    if (isAuthenticated && !notificationInitialized) {
+    if (isAuthenticated) {
       initNotifications();
     }
 
     // Cleanup on unmount
     return () => {
-      if (notificationInitialized) {
+      if (isAuthenticated) {
         notificationService.destroy();
       }
     };
-  }, [isAuthenticated, notificationInitialized]);
+  }, [isAuthenticated]);
 
   if (loading) {
     return <Loading />
@@ -171,7 +165,6 @@ const App = () => {
 
   return (
     <>
-      <NotificationPermission />
       {isAuthenticated ? (
         <>
           <ToastContainer position="top-right" autoClose={3000} />

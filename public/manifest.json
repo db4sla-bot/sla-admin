@@ -72,5 +72,8 @@
   "scope": "/",
   "categories": ["business", "productivity", "utilities"],
   "lang": "en",
-  "dir": "ltr"
+  "dir": "ltr",
+  "permissions": [
+    "notifications"
+  ]
 }

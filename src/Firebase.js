@@ -1,7 +1,7 @@
-// src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -22,5 +22,8 @@ export const auth = getAuth(app);
 
 // Firestore Database
 export const db = getFirestore(app);
+
+// Firebase Cloud Messaging
+export const messaging = getMessaging(app);
 
 export default app;

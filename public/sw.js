@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sla-admin-v1760278557370';
+const CACHE_NAME = 'sla-admin-v1760364329056';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -209,15 +209,8 @@ self.addEventListener('notificationclick', event => {
         const client = windowClients[i];
         console.log('SW: Checking client:', client.url);
         
-        if (client.url.includes(window.location.origin) && 'focus' in client) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
           console.log('SW: Focusing existing window');
-          
-          // Send message to client to navigate to the target URL
-          client.postMessage({
-            type: 'NAVIGATE_TO',
-            url: targetUrl
-          });
-          
           return client.focus();
         }
       }
@@ -231,41 +224,6 @@ self.addEventListener('notificationclick', event => {
       console.error('SW: Error handling notification click:', error);
     })
   );
-});
-
-// Push event handler (for future push notifications)
-self.addEventListener('push', event => {
-  console.log('SW: Push event received');
-  
-  if (event.data) {
-    try {
-      const pushData = event.data.json();
-      console.log('SW: Push data:', pushData);
-      
-      const title = pushData.title || 'New Notification';
-      const options = {
-        body: pushData.body || 'You have a new notification',
-        icon: '/fav.png',
-        badge: '/fav.png',
-        tag: pushData.tag || 'push-notification',
-        data: pushData.data || {}
-      };
-      
-      event.waitUntil(
-        self.registration.showNotification(title, options)
-      );
-    } catch (error) {
-      console.error('SW: Error handling push event:', error);
-    }
-  }
-});
-
-// Listen for navigation messages from notification clicks
-self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'NAVIGATE_TO') {
-    // This is handled by the client side
-    console.log('SW: Navigation message received for URL:', event.data.url);
-  }
 });
 
 console.log('SW: Service worker loaded and ready');
