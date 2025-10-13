@@ -10,12 +10,27 @@ import { useAppContext } from "../../Context"; // Import context
 
 const paymentModes = ["UPI", "Cash", "Personal", "Employee"];
 
+// Services list for work dropdown
+const servicesList = [
+  "Invisible Grills",
+  "Mosquito Mesh", 
+  "Cloth Hangers",
+  "Artificial Grass",
+  "Bird Spikes"
+];
+
 const CustomerDetails = () => {
   const { customerid } = useParams();
-  const { userDetails } = useAppContext(); // Get user details from context
+  const { userDetails } = useAppContext();
   const [customer, setCustomer] = useState(null);
   const [stage, setStage] = useState('profile');
-  const [workInput, setWorkInput] = useState("");
+  
+  // Work section states - Simplified
+  const [selectedService, setSelectedService] = useState("");
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const [workDescription, setWorkDescription] = useState("");
+  
+  // Material section states
   const [materialDropdownOpen, setMaterialDropdownOpen] = useState(false);
   const [materials, setMaterials] = useState([]);
   const [materialSearch, setMaterialSearch] = useState("");
@@ -89,9 +104,17 @@ const CustomerDetails = () => {
     }
   }, [customer]);
 
-  // Add work
+  // Simplified Add work function
   const handleAddWork = async () => {
-    if (!workInput.trim()) return;
+    if (!selectedService) {
+      toast.error("Please select a service");
+      return;
+    }
+    if (!workDescription.trim()) {
+      toast.error("Please enter work description");
+      return;
+    }
+    
     setLoading(true);
     try {
       const docRef = doc(db, "Customers", customerid);
@@ -99,18 +122,23 @@ const CustomerDetails = () => {
       const currentTime = new Date().toLocaleTimeString();
       const username = userDetails?.name || "Unknown User";
       
-      const newWork = [...(customer.work || []), {
-        name: workInput.trim(),
+      const newWorkItem = {
+        service: selectedService,
+        description: workDescription.trim(),
         addedBy: username,
         date: currentDate,
         time: currentTime
-      }];
+      };
+      
+      const newWork = [...(customer.work || []), newWorkItem];
       
       const newActivity = [
         ...(customer.activity || []),
         {
           type: "work",
-          name: workInput.trim(),
+          name: `${selectedService}: ${workDescription.trim()}`,
+          service: selectedService,
+          description: workDescription.trim(),
           date: currentDate,
           time: currentTime,
           addedBy: username,
@@ -128,9 +156,14 @@ const CustomerDetails = () => {
         activity: newActivity,
       }));
       
-      setWorkInput("");
-      toast.success("Work added!");
+      // Reset form
+      setSelectedService("");
+      setWorkDescription("");
+      setShowServiceDropdown(false);
+      
+      toast.success("Work added successfully!");
     } catch (err) {
+      console.error("Error adding work:", err);
       toast.error("Failed to add work!");
     }
     setLoading(false);
@@ -157,12 +190,40 @@ const CustomerDetails = () => {
 
   // Add material used (with work)
   const handleAddMaterialUsed = async () => {
-    if (!selectedMaterial || !materialQty || isNaN(materialQty) || materialQty <= 0) return;
+    if (!selectedMaterial) {
+      toast.error("Please select a material");
+      return;
+    }
+    if (!materialQty || isNaN(materialQty) || materialQty <= 0) {
+      toast.error("Please enter a valid quantity");
+      return;
+    }
+    if (!selectedWork) {
+      toast.error("Please select work for this material");
+      return;
+    }
     
-    // Check if there's enough material in stock
-    const currentStock = selectedMaterial.remaining || selectedMaterial.quantity || 0;
-    if (Number(materialQty) > currentStock) {
-      toast.error(`Not enough material in stock. Available: ${currentStock}`);
+    // Enhanced quantity validation
+    const enteredQty = Number(materialQty);
+    const availableStock = selectedMaterial.remaining || selectedMaterial.quantity || 0;
+    
+    console.log("Material validation:", {
+      material: selectedMaterial.name,
+      enteredQty,
+      availableStock,
+      selectedMaterial
+    });
+    
+    if (enteredQty > availableStock) {
+      toast.error(
+        `Entered quantity (${enteredQty}) is more than available stock (${availableStock}). Please reduce the quantity.`,
+        { autoClose: 5000 }
+      );
+      return;
+    }
+    
+    if (availableStock <= 0) {
+      toast.error(`${selectedMaterial.name} is out of stock!`);
       return;
     }
     
@@ -174,12 +235,15 @@ const CustomerDetails = () => {
       
       // Update material quantity in Materials collection
       const materialDocRef = doc(db, "Materials", selectedMaterial.id);
-      const newQty = currentStock - Number(materialQty);
+      const newQty = availableStock - enteredQty;
       
       // Update both quantity and remaining fields
       await updateDoc(materialDocRef, { 
         quantity: newQty,
-        remaining: newQty
+        remaining: newQty,
+        lastUpdated: new Date(),
+        lastUsedBy: username,
+        lastUsedDate: currentDate
       });
 
       // Update customer materialUsed array
@@ -187,12 +251,17 @@ const CustomerDetails = () => {
       const newMaterialUsed = [
         ...(customer.materialUsed || []),
         {
+          materialId: selectedMaterial.id,
           name: selectedMaterial.name,
-          quantity: Number(materialQty),
-          work: selectedWork || "",
+          quantity: enteredQty,
+          work: selectedWork,
+          pricePerUnit: selectedMaterial.price || 0,
+          totalCost: (selectedMaterial.price || 0) * enteredQty,
           addedBy: username,
           date: currentDate,
           time: currentTime,
+          stockBefore: availableStock,
+          stockAfter: newQty
         },
       ];
 
@@ -201,9 +270,12 @@ const CustomerDetails = () => {
         ...(customer.activity || []),
         {
           type: "material",
-          name: selectedMaterial.name,
-          quantity: Number(materialQty),
-          work: selectedWork || "",
+          name: `Used ${enteredQty} ${selectedMaterial.name}`,
+          quantity: enteredQty,
+          work: selectedWork,
+          materialName: selectedMaterial.name,
+          stockBefore: availableStock,
+          stockAfter: newQty,
           date: currentDate,
           time: currentTime,
           addedBy: username,
@@ -225,17 +297,29 @@ const CustomerDetails = () => {
       setMaterials((prev) =>
         prev.map((mat) =>
           mat.id === selectedMaterial.id
-            ? { ...mat, quantity: newQty, remaining: newQty }
+            ? { 
+                ...mat, 
+                quantity: newQty, 
+                remaining: newQty,
+                lastUpdated: new Date(),
+                lastUsedBy: username 
+              }
             : mat
         )
       );
       
+      // Reset form
       setSelectedMaterial(null);
       setMaterialQty("");
       setSelectedWork(null);
       setMaterialDropdownOpen(false);
       setShowWorkDropdown(false);
-      toast.success(`Material added! New stock: ${newQty}`);
+      
+      toast.success(
+        `Material added successfully! ${selectedMaterial.name} stock reduced from ${availableStock} to ${newQty}`,
+        { autoClose: 4000 }
+      );
+      
     } catch (err) {
       console.error("Error adding material:", err);
       toast.error("Failed to add material!");
@@ -559,19 +643,57 @@ const CustomerDetails = () => {
             </div>
           </div>
 
-          {/* Work Tab */}
+          {/* Work Tab - Simplified */}
           <div className={`profile-details-con ${stage === 'work' ? '' : 'd-none'}`}>
             <div className="work-list">
               <h4>Work Management</h4>
               <div className="work-add-row">
+                {/* Service Dropdown */}
+                <div className="material-dropdown-container">
+                  <button
+                    type="button"
+                    className="material-dropdown-header"
+                    onClick={() => setShowServiceDropdown(!showServiceDropdown)}
+                  >
+                    <span>
+                      {selectedService || "Select Service"}
+                    </span>
+                    <ChevronDown className="icon" />
+                  </button>
+                  {showServiceDropdown && (
+                    <div className="material-dropdown-list">
+                      <div className="material-dropdown-scroll">
+                        {servicesList.map((service, idx) => (
+                          <div
+                            key={idx}
+                            className="material-dropdown-item"
+                            onClick={() => {
+                              setSelectedService(service);
+                              setShowServiceDropdown(false);
+                            }}
+                          >
+                            🔧 {service}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Work Description Input */}
                 <input
                   type="text"
-                  placeholder="Enter work name..."
-                  value={workInput}
-                  onChange={(e) => setWorkInput(e.target.value)}
+                  placeholder="Enter work description..."
+                  value={workDescription}
+                  onChange={(e) => setWorkDescription(e.target.value)}
                   className="work-input"
                 />
-                <button className="add-btn" onClick={handleAddWork} disabled={loading}>
+                
+                <button 
+                  className="add-btn" 
+                  onClick={handleAddWork} 
+                  disabled={loading || !selectedService || !workDescription.trim()}
+                >
                   {loading ? <span className="loader-white"></span> : null}
                   Add Work
                 </button>
@@ -587,10 +709,43 @@ const CustomerDetails = () => {
                 // Show latest work items first by reversing the array
                 [...(customer.work || [])].reverse().map((work, idx) => (
                   <div key={idx} className="work-item">
-                    <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--txt-dark)' }}>
-                      {typeof work === 'string' ? work : work.name}
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'flex-start',
+                      marginBottom: '8px'
+                    }}>
+                      <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--txt-dark)' }}>
+                        {work.service || work.name || 'Service Work'}
+                      </div>
+                      <span style={{
+                        background: '#e0f2fe',
+                        color: '#0369a1',
+                        padding: '4px 8px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        textTransform: 'uppercase'
+                      }}>
+                        {work.service || 'Service'}
+                      </span>
                     </div>
-                    {typeof work === 'object' && work.addedBy && (
+                    
+                    {(work.description || work.comment) && (
+                      <div style={{ 
+                        fontSize: '14px', 
+                        color: 'var(--txt-dark)', 
+                        marginBottom: '8px',
+                        background: '#f8fafc',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        borderLeft: '3px solid var(--blue)'
+                      }}>
+                        💬 {work.description || work.comment}
+                      </div>
+                    )}
+                    
+                    {work.addedBy && (
                       <div style={{ fontSize: '12px', color: 'var(--txt-light)', marginTop: '8px' }}>
                         👤 Added by: <strong>{work.addedBy}</strong> | 📅 {work.date} ⏰ {work.time}
                       </div>
@@ -606,7 +761,7 @@ const CustomerDetails = () => {
             <div className="material-used-list">
               <h4>Materials Management</h4>
               <div className="material-add-row">
-                {/* Work Dropdown */}
+                {/* Work Dropdown - Updated to use service names */}
                 <div className="material-dropdown-container">
                   <button
                     type="button"
@@ -614,9 +769,9 @@ const CustomerDetails = () => {
                     onClick={() => setShowWorkDropdown((open) => !open)}
                   >
                     <span>
-                      {selectedWork ? (typeof selectedWork === 'string' ? selectedWork : selectedWork.name) : "Choose Work"}
+                      {selectedWork || "Choose Work"}
                     </span>
-                    <span className="icon">▼</span>
+                    <ChevronDown className="icon" />
                   </button>
                   {showWorkDropdown && (
                     <div className="material-dropdown-list">
@@ -629,11 +784,11 @@ const CustomerDetails = () => {
                               key={idx}
                               className="material-dropdown-item"
                               onClick={() => {
-                                setSelectedWork(typeof work === 'string' ? work : work.name);
+                                setSelectedWork(work.service || work.name || 'Service Work');
                                 setShowWorkDropdown(false);
                               }}
                             >
-                              {typeof work === 'string' ? work : work.name}
+                              🔧 {work.service || work.name || 'Service Work'}
                             </div>
                           ))
                         )}
@@ -650,9 +805,12 @@ const CustomerDetails = () => {
                     onClick={() => setMaterialDropdownOpen((open) => !open)}
                   >
                     <span>
-                      {selectedMaterial ? selectedMaterial.name : "Choose Material"}
+                      {selectedMaterial ? 
+                        `${selectedMaterial.name} (Stock: ${selectedMaterial.remaining || selectedMaterial.quantity || 0})` 
+                        : "Choose Material"
+                      }
                     </span>
-                    <span className="icon">▼</span>
+                    <ChevronDown className="icon" />
                   </button>
                   {materialDropdownOpen && (
                     <div className="material-dropdown-list">
@@ -667,19 +825,36 @@ const CustomerDetails = () => {
                         {filteredMaterials.length === 0 ? (
                           <div className="material-dropdown-item">No materials found</div>
                         ) : (
-                          filteredMaterials.map((mat) => (
-                            <div
-                              key={mat.id}
-                              className="material-dropdown-item"
-                              onClick={() => {
-                                setSelectedMaterial(mat);
-                                setMaterialDropdownOpen(false);
-                                setMaterialSearch("");
-                              }}
-                            >
-                              {mat.name}
-                            </div>
-                          ))
+                          filteredMaterials.map((mat) => {
+                            const stock = mat.remaining || mat.quantity || 0;
+                            return (
+                              <div
+                                key={mat.id}
+                                className="material-dropdown-item"
+                                onClick={() => {
+                                  setSelectedMaterial(mat);
+                                  setMaterialDropdownOpen(false);
+                                  setMaterialSearch("");
+                                }}
+                                style={{
+                                  background: stock <= 0 ? '#fee2e2' : stock <= 5 ? '#fef3c7' : '',
+                                  color: stock <= 0 ? '#dc2626' : stock <= 5 ? '#d97706' : ''
+                                }}
+                              >
+                                📦 {mat.name} 
+                                <span style={{ 
+                                  fontSize: '12px', 
+                                  marginLeft: '8px',
+                                  fontWeight: '600',
+                                  color: stock <= 0 ? '#dc2626' : stock <= 5 ? '#d97706' : '#22c55e'
+                                }}>
+                                  (Stock: {stock})
+                                  {stock <= 0 && ' - OUT OF STOCK'}
+                                  {stock > 0 && stock <= 5 && ' - LOW STOCK'}
+                                </span>
+                              </div>
+                            );
+                          })
                         )}
                       </div>
                     </div>
@@ -692,18 +867,64 @@ const CustomerDetails = () => {
                   value={materialQty}
                   onChange={(e) => setMaterialQty(e.target.value)}
                   min="1"
-                  placeholder="Quantity"
+                  max={selectedMaterial ? (selectedMaterial.remaining || selectedMaterial.quantity || 0) : undefined}
+                  placeholder={selectedMaterial ? `Max: ${selectedMaterial.remaining || selectedMaterial.quantity || 0}` : "Quantity"}
                   disabled={!selectedMaterial}
+                  style={{
+                    borderColor: selectedMaterial && materialQty && Number(materialQty) > (selectedMaterial.remaining || selectedMaterial.quantity || 0) ? '#ef4444' : ''
+                  }}
                 />
+                
                 <button
                   className="add-btn"
                   onClick={handleAddMaterialUsed}
-                  disabled={!selectedMaterial || !materialQty || savingMaterial}
+                  disabled={
+                    !selectedMaterial || 
+                    !materialQty || 
+                    !selectedWork || 
+                    savingMaterial ||
+                    (selectedMaterial && Number(materialQty) > (selectedMaterial.remaining || selectedMaterial.quantity || 0))
+                  }
                 >
                   {savingMaterial ? <span className="loader-white"></span> : null}
                   Add Material
                 </button>
               </div>
+              
+              {/* Stock warning for selected material */}
+              {selectedMaterial && (
+                <div style={{
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  margin: '8px 0',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: (selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 0 
+                    ? '#fee2e2' 
+                    : (selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 5 
+                    ? '#fef3c7' 
+                    : '#dcfce7',
+                  color: (selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 0 
+                    ? '#dc2626' 
+                    : (selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 5 
+                    ? '#d97706' 
+                    : '#16a34a',
+                }}>
+                  <span>
+                    {(selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 0 
+                      ? '⚠️ OUT OF STOCK' 
+                      : (selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 5 
+                      ? '⚠️ LOW STOCK WARNING' 
+                      : '✅ STOCK AVAILABLE'}
+                  </span>
+                  <span>
+                    Available: {selectedMaterial.remaining || selectedMaterial.quantity || 0} units
+                  </span>
+                </div>
+              )}
               
               {(customer.materialUsed || []).length === 0 ? (
                 <div className="empty-state">
@@ -715,9 +936,43 @@ const CustomerDetails = () => {
                 // Show latest material usage first by reversing the array
                 [...(customer.materialUsed || [])].reverse().map((mat, idx) => (
                   <div key={idx} className="material-used-item">
-                    <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--txt-dark)' }}>
-                      📦 {mat.name} - Qty: {mat.quantity} {mat.work ? `| Work: ${mat.work}` : ""}
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'flex-start',
+                      marginBottom: '8px'
+                    }}>
+                      <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--txt-dark)' }}>
+                        📦 {mat.name} - Qty: {mat.quantity}
+                      </div>
+                      {mat.work && (
+                        <span style={{
+                          background: '#e0f2fe',
+                          color: '#0369a1',
+                          padding: '4px 8px',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: '600'
+                        }}>
+                          🔧 {mat.work}
+                        </span>
+                      )}
                     </div>
+                    
+                    {mat.stockBefore && mat.stockAfter !== undefined && (
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: 'var(--txt-light)', 
+                        marginBottom: '8px',
+                        background: '#f1f5f9',
+                        padding: '6px 10px',
+                        borderRadius: '6px'
+                      }}>
+                        📊 Stock: {mat.stockBefore} → {mat.stockAfter} 
+                        {mat.totalCost && <span> | 💰 Cost: ₹{mat.totalCost}</span>}
+                      </div>
+                    )}
+                    
                     {mat.addedBy && (
                       <div style={{ fontSize: '12px', color: 'var(--txt-light)', marginTop: '8px' }}>
                         👤 Added by: <strong>{mat.addedBy}</strong> | 📅 {mat.date} ⏰ {mat.time}
@@ -759,7 +1014,7 @@ const CustomerDetails = () => {
               </div>
             )}
 
-            {/* Add payment info for work */}
+            {/* Add payment info for work - Updated dropdown */}
             <div className="payment-add-row">
               <div className="material-dropdown-container">
                 <button
@@ -783,11 +1038,11 @@ const CustomerDetails = () => {
                             key={idx}
                             className="material-dropdown-item"
                             onClick={() => {
-                              setSelectedPaymentWork(typeof work === 'string' ? work : work.name);
+                              setSelectedPaymentWork(work.service || work.name || 'Service Work');
                               setShowPaymentWorkDropdown(false);
                             }}
                           >
-                            {typeof work === 'string' ? work : work.name}
+                            {work.service || work.name || 'Service Work'}
                           </div>
                         ))
                       )}
