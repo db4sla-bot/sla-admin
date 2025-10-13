@@ -1,7 +1,7 @@
 /* filepath: c:\Users\Arumulla SivaKrishna\Documents\sla-admin\src\Pages\Leads\Leads.jsx */
 import React, { useEffect, useState } from 'react'
 import './Leads.css'
-import { Search, Filter, Edit, Plus, X, Save, User, Mail, MapPin, Phone, Building, Briefcase, Calendar, Target, MessageSquare } from 'lucide-react'
+import { Search, Filter, Edit, Plus, X, Save, User, Mail, MapPin, Phone, Building, Briefcase, Calendar, Target, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react'
 import { db } from '../../Firebase'
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore"
 import Hamburger from '../../Components/Hamburger/Hamburger'
@@ -18,6 +18,7 @@ const Leads = () => {
   const [toDateFilter, setToDateFilter] = useState('') // New to date filter
   const [sourceFilter, setSourceFilter] = useState('') // New source filter
   const [subSourceFilter, setSubSourceFilter] = useState('') // New sub source filter
+  const [servicesFilter, setServicesFilter] = useState('') // New services filter
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedLead, setSelectedLead] = useState(null)
   const [editFormData, setEditFormData] = useState({
@@ -35,6 +36,17 @@ const Leads = () => {
     followUpDate: ''
   })
   const [saving, setSaving] = useState(false)
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(20)
+  
+  // Lead counts
+  const [leadCounts, setLeadCounts] = useState({
+    total: 0,
+    filtered: 0,
+    loading: 0
+  })
 
   const statusOptions = ['New', 'Follow Up', 'Site Visit', 'Quotation', 'Customer', 'Declined']
   const statusColors = {
@@ -86,11 +98,18 @@ const Leads = () => {
 
   useEffect(() => {
     applyFilters()
-  }, [searchTerm, statusFilter, fromDateFilter, toDateFilter, sourceFilter, subSourceFilter, leads])
+  }, [searchTerm, statusFilter, fromDateFilter, toDateFilter, sourceFilter, subSourceFilter, servicesFilter, leads])
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, statusFilter, fromDateFilter, toDateFilter, sourceFilter, subSourceFilter, servicesFilter])
 
   const fetchLeads = async () => {
     try {
       setLoading(true)
+      setLeadCounts(prev => ({ ...prev, loading: 1 }))
+      
       const querySnapshot = await getDocs(collection(db, "Leads"))
       const leadsList = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -109,9 +128,18 @@ const Leads = () => {
       
       setLeads(leadsList)
       setFilteredLeads(leadsList)
+      
+      // Update counts
+      setLeadCounts({
+        total: leadsList.length,
+        filtered: leadsList.length,
+        loading: 0
+      })
+      
     } catch (error) {
       console.error("Error fetching leads:", error)
       toast.error("Failed to fetch leads")
+      setLeadCounts({ total: 0, filtered: 0, loading: 0 })
     } finally {
       setLoading(false)
     }
@@ -127,7 +155,7 @@ const Leads = () => {
         lead.phone?.includes(searchTerm) ||
         lead.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.details?.toLowerCase().includes(searchTerm.toLowerCase()) || // Added details search
+        lead.details?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.source?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.subSource?.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -187,7 +215,75 @@ const Leads = () => {
       filtered = filtered.filter(lead => lead.subSource === subSourceFilter)
     }
 
+    // Services filter - NEW
+    if (servicesFilter) {
+      filtered = filtered.filter(lead => {
+        if (!lead.requiredServices || !Array.isArray(lead.requiredServices)) return false
+        return lead.requiredServices.includes(servicesFilter)
+      })
+    }
+
     setFilteredLeads(filtered)
+    
+    // Update filtered count
+    setLeadCounts(prev => ({
+      ...prev,
+      filtered: filtered.length
+    }))
+  }
+
+  // Pagination calculations
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentLeads = filteredLeads.slice(indexOfFirstItem, indexOfLastItem)
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage)
+
+  // Pagination handlers
+  const goToPage = (pageNumber) => {
+    setCurrentPage(pageNumber)
+  }
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1))
+  }
+
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages))
+  }
+
+  const getPaginationNumbers = () => {
+    const pages = []
+    const maxVisiblePages = 5
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i)
+        }
+        pages.push('...')
+        pages.push(totalPages)
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1)
+        pages.push('...')
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i)
+        }
+      } else {
+        pages.push(1)
+        pages.push('...')
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i)
+        }
+        pages.push('...')
+        pages.push(totalPages)
+      }
+    }
+    
+    return pages
   }
 
   const handleSearch = (e) => {
@@ -214,6 +310,10 @@ const Leads = () => {
     setSubSourceFilter(e.target.value)
   }
 
+  const handleServicesFilter = (e) => {
+    setServicesFilter(e.target.value)
+  }
+
   const clearFilters = () => {
     setSearchTerm('')
     setStatusFilter('')
@@ -221,6 +321,8 @@ const Leads = () => {
     setToDateFilter('')
     setSourceFilter('')
     setSubSourceFilter('')
+    setServicesFilter('') // Clear services filter
+    setCurrentPage(1) // Reset to first page when clearing filters
   }
 
   const handleEditLead = (lead) => {
@@ -341,7 +443,7 @@ const Leads = () => {
       <div className="leads-top-bar-container">
         <Hamburger />
         <div className="leads-breadcrumps-container">
-          <h1>Leads</h1>
+          <h1>Leads ({leadCounts.total})</h1>
         </div>
         <div className="leads-actions-container">
           <NavLink to="/addleads" className="leads-add-btn">
@@ -351,10 +453,24 @@ const Leads = () => {
       </div>
 
       <div className="leads-main-container">
-        {/* Header */}
+        {/* Header with Enhanced Counts */}
         <div className="leads-header">
-          <h1>Leads Management</h1>
-          <p>Manage and track your leads pipeline</p>
+          <div className="leads-header-info">
+            <h1>Leads Management</h1>
+            <p>Manage and track your leads pipeline</p>
+          </div>
+          <div className="leads-counts-display">
+            <div className="leads-count-card total">
+              <div className="leads-count-number">{leadCounts.total}</div>
+              <div className="leads-count-label">Total Leads</div>
+            </div>
+            {(searchTerm || statusFilter || fromDateFilter || toDateFilter || sourceFilter || subSourceFilter || servicesFilter) && (
+              <div className="leads-count-card filtered">
+                <div className="leads-count-number">{leadCounts.filtered}</div>
+                <div className="leads-count-label">Filtered Results</div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
@@ -423,6 +539,19 @@ const Leads = () => {
               </select>
             </div>
 
+            <div className="leads-services-filter">
+              <select
+                value={servicesFilter}
+                onChange={handleServicesFilter}
+                className="leads-services-select"
+              >
+                <option value="">All Services</option>
+                {serviceOptions.map(service => (
+                  <option key={service} value={service}>{service}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="leads-status-filter">
               <select
                 value={statusFilter}
@@ -443,19 +572,31 @@ const Leads = () => {
           </div>
         </div>
 
-        {/* Results Summary */}
+        {/* Enhanced Results Summary with Pagination Info */}
         <div className="leads-summary">
-          <p>
-            Showing {filteredLeads.length} of {leads.length} leads
-          </p>
-          {(searchTerm || statusFilter || fromDateFilter || toDateFilter || sourceFilter || subSourceFilter) && (
-            <p className="leads-filter-info">Filters applied</p>
+          <div className="leads-summary-info">
+            <p>
+              Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, leadCounts.filtered)} of {leadCounts.filtered} leads
+              {leadCounts.filtered !== leadCounts.total && (
+                <span className="leads-total-info"> (filtered from {leadCounts.total} total)</span>
+              )}
+            </p>
+            {(searchTerm || statusFilter || fromDateFilter || toDateFilter || sourceFilter || subSourceFilter || servicesFilter) && (
+              <p className="leads-filter-info">
+                {leadCounts.filtered} results match your filters
+              </p>
+            )}
+          </div>
+          {totalPages > 1 && (
+            <div className="leads-page-info">
+              Page {currentPage} of {totalPages}
+            </div>
           )}
         </div>
 
         {/* Leads Table */}
         <div className="leads-table-container">
-          {filteredLeads.length > 0 ? (
+          {currentLeads.length > 0 ? (
             <table className="leads-table">
               <thead>
                 <tr>
@@ -471,7 +612,7 @@ const Leads = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredLeads.map((lead) => {
+                {currentLeads.map((lead) => {
                   // Format creation date
                   const formatCreatedDate = (createdAt) => {
                     if (!createdAt) return 'N/A';
@@ -582,11 +723,17 @@ const Leads = () => {
               <div className="leads-empty-icon">👥</div>
               <h3>No leads found</h3>
               <p>
-                {searchTerm || statusFilter || fromDateFilter || toDateFilter || sourceFilter || subSourceFilter
-                  ? "Try adjusting your search criteria or filters"
+                {searchTerm || statusFilter || fromDateFilter || toDateFilter || sourceFilter || subSourceFilter || servicesFilter
+                  ? `No leads match your current filters. Try adjusting your search criteria.`
                   : "Start by adding your first lead"}
               </p>
-              {!searchTerm && !statusFilter && !fromDateFilter && !toDateFilter && !sourceFilter && !subSourceFilter && (
+              {leadCounts.total > 0 && (searchTerm || statusFilter || fromDateFilter || toDateFilter || sourceFilter || subSourceFilter || servicesFilter) && (
+                <button className="leads-clear-filters-btn" onClick={clearFilters}>
+                  <Filter />
+                  Clear All Filters to See All {leadCounts.total} Leads
+                </button>
+              )}
+              {leadCounts.total === 0 && (
                 <NavLink to="/addleads" className="leads-empty-add-btn">
                   <Plus /> Add New Lead
                 </NavLink>
@@ -594,6 +741,56 @@ const Leads = () => {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="leads-pagination">
+            <div className="leads-pagination-info">
+              <span>
+                Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, leadCounts.filtered)} of {leadCounts.filtered} leads
+              </span>
+            </div>
+            
+            <div className="leads-pagination-controls">
+              <button
+                className="leads-page-btn leads-page-prev"
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                title="Previous page"
+              >
+                <ChevronLeft size={20} />
+                Previous
+              </button>
+              
+              <div className="leads-page-numbers">
+                {getPaginationNumbers().map((page, index) => (
+                  <React.Fragment key={index}>
+                    {page === '...' ? (
+                      <span className="leads-page-ellipsis">...</span>
+                    ) : (
+                      <button
+                        className={`leads-page-number ${currentPage === page ? 'active' : ''}`}
+                        onClick={() => goToPage(page)}
+                      >
+                        {page}
+                      </button>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+              
+              <button
+                className="leads-page-btn leads-page-next"
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                title="Next page"
+              >
+                Next
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Edit Lead Modal */}
