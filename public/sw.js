@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sla-admin-v1760364329056';
+const CACHE_NAME = 'sla-admin-v1760365544086';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -211,6 +211,13 @@ self.addEventListener('notificationclick', event => {
         
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           console.log('SW: Focusing existing window');
+          
+          // Send navigation message to client
+          client.postMessage({
+            type: 'NAVIGATE_TO',
+            url: targetUrl
+          });
+          
           return client.focus();
         }
       }
@@ -224,6 +231,14 @@ self.addEventListener('notificationclick', event => {
       console.error('SW: Error handling notification click:', error);
     })
   );
+});
+
+// Handle navigation messages
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'NAVIGATE_TO') {
+    // This will be handled by the client-side code
+    console.log('SW: Received navigation request:', event.data.url);
+  }
 });
 
 console.log('SW: Service worker loaded and ready');

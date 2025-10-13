@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import './App.css'
 import Logo from './assets/logo.jpg'
 import { MenuItemsData } from './SLAData'
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
   ChevronDown,
   ChevronRight,
@@ -66,6 +66,7 @@ const App = () => {
   const [userAccess, setUserAccess] = useState([])
   const [filteredMenuItems, setFilteredMenuItems] = useState([])
   const location = useLocation();
+  const navigate = useNavigate();
 
   const handleMenuSidebarClose = () => {
     document
@@ -139,9 +140,6 @@ const App = () => {
       try {
         await notificationService.initialize();
         console.log('Notification service initialized');
-        
-        // Check for any pending notifications
-        await notificationService.checkPendingNotifications();
       } catch (error) {
         console.error('Failed to initialize notifications:', error);
       }
@@ -151,13 +149,22 @@ const App = () => {
       initNotifications();
     }
 
+    // Listen for navigation messages from service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'NAVIGATE_TO') {
+          navigate(event.data.url);
+        }
+      });
+    }
+
     // Cleanup on unmount
     return () => {
       if (isAuthenticated) {
         notificationService.destroy();
       }
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navigate]);
 
   if (loading) {
     return <Loading />

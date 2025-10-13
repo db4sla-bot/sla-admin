@@ -136,11 +136,16 @@ const AddLeads = () => {
       
       toast.success('Lead saved successfully! 🎉');
 
-      // Send notification
+      // Send notification to ALL devices globally (this now works across all devices)
       try {
-        console.log('🔔 Attempting to send notification...');
+        console.log('🌐 Sending notifications to all devices...');
         await notificationService.sendLeadNotification(savedLeadData);
-        console.log('✅ Notification sent successfully');
+        console.log('✅ Notifications sent to all devices successfully');
+        
+        toast.info('📱 Notifications sent to all devices!', {
+          position: "bottom-right",
+          autoClose: 3000,
+        });
       } catch (notificationError) {
         console.error('❌ Failed to send notification:', notificationError);
       }
