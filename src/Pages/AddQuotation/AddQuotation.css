@@ -842,7 +842,7 @@
 }
 
 .quotation-preview-items-table {
-    margin-top: clamp(12px, 2vw, 18px);
+    margin-top: 0;
     background: #f8fafc;
     border-radius: 8px;
     padding: clamp(12px, 2vw, 18px);
@@ -1147,12 +1147,13 @@
 }
 
 .quotation-product-display {
-  background: #f8fafc !important;
+  background: #dbeafe !important;
   border-radius: 8px !important;
-  padding: clamp(12px, 2vw, 16px) !important;
-  margin: clamp(12px, 2vw, 18px) 0 !important;
+  padding: 8px 12px !important;
   text-align: center !important;
   border-left: 4px solid var(--blue) !important;
+  display: flex;
+  margin-bottom: 0 !important;
 }
 
 .quotation-product-display h4 {
@@ -1163,9 +1164,9 @@
 }
 
 .quotation-product-display span {
-  font-size: clamp(16px, 2.2vw, 18px) !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
-  color: var(--txt-dark) !important;
+  color: var(--blue) !important;
 }
 
 .quotation-product-subtotal {

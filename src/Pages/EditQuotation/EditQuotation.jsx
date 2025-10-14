@@ -916,7 +916,7 @@ const EditQuotation = () => {
                 product.items && product.items.length > 0 && (
                   <div key={product.id} className="quotation-preview-product-section">
                     <div className="quotation-product-display">
-                      <h4>Service Category</h4>
+                      {/* <h4>Service Category</h4> */}
                       <span>{product.name}</span>
                     </div>
 

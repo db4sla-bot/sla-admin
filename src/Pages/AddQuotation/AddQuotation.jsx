@@ -304,19 +304,18 @@ const AddQuotation = () => {
     tax: { label: `GST (${quotationData.gst || 0}%)`, value: quotationData.taxAmount },
     grandTotal: quotationData.grandTotal,
     notes: quotationData.customNotes.length > 0 ? quotationData.customNotes : [
-      "All accounts are to be paid within 7 days from receipt of quotation.",
-      "To be paid by cheque or credit card or direct payment online.",
-      "If account is not paid within 7 days the credits details supplied as confirmation of work undertaken will be charged the agreed quoted fee noted above."
+      "Availability of client or someone from client side is mandatory at the site on the day of actual work start.",
+      "Advance Payment & Client Approval for FINAL QUOTATION is must to start the work.",
     ],
     terms: quotationData.customTerms.length > 0 ? quotationData.customTerms : [
-      "All accounts are to be paid within 7 days from receipt of quotation.",
-      "To be paid by cheque or credit card or direct payment online.",
-      "If account is not paid within 7 days the credits details supplied as confirmation.",
-      "This is computer generated quotation and does not require physical signature."
+      "Invisible Grill Tensile Strength will depend on strength of the wall/site construction.",
+      "SLA Invisible Grills will not be liable for any form of compensation in case of any damage incurred due to special request (especially when Granite/Marbles involved in designated installation area)",
+      "All goods remains property of SLA Invisible Grills until full payment is received.",
+      "Please check Warranty Terms & Conditions of your product in your Invoice bill."
     ],
     manager: {
       name: "Sreekanth Chowdary",
-      role: "Managing Director",
+      role: "Managing Partner",
       date: new Date().toLocaleString()
     }
   };
@@ -867,7 +866,7 @@ const AddQuotation = () => {
                 product.items.length > 0 && (
                   <div key={product.id} className="quotation-preview-product-section">
                     <div className="quotation-product-display">
-                      <h4>Service Category</h4>
+                      {/* <h4>Service Category</h4> */}
                       <span>{product.name}</span>
                     </div>
 
@@ -875,7 +874,7 @@ const AddQuotation = () => {
                       <table>
                         <thead>
                           <tr>
-                            <th>SERVICE</th>
+                            <th>SERVICE DESCRIPTION</th>
                             <th>SQFT</th>
                             <th>ACTUAL PRICE</th>
                             <th>DISCOUNTED PRICE</th>

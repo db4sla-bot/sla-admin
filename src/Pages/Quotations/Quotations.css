@@ -641,7 +641,7 @@
 .quotation-product-display {
   background: #f8fafc;
   border-radius: 8px;
-  padding: 16px;
+  padding: 8px 12px;
   margin: 18px 0;
   text-align: center;
   border-left: 4px solid #3b82f6;
@@ -655,7 +655,7 @@
 }
 
 .quotation-product-display span {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: #1f2937;
 }
@@ -726,6 +726,8 @@
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 2px solid #e5e7eb;
+  width: 50%;
+  margin: 20px 0 20px auto !important;
 }
 
 .quotation-preview-overall-summary .quotation-summary-row {
