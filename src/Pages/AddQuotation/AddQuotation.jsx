@@ -28,11 +28,15 @@ const AddQuotation = () => {
     toAddress: "",
     quotationProducts: [], // Array of products with their items
     subTotal: 0,
+    transport: 0, // New field
+    food: 0, // New field
+    discount: 0, // New field
     gst: "",
     taxAmount: 0,
     grandTotal: 0,
     customNotes: [],
-    customTerms: []
+    customTerms: [],
+    customObservations: [] // New field for observations/risks
   });
   
   // States for product and item management
@@ -41,6 +45,7 @@ const AddQuotation = () => {
   
   const [newNote, setNewNote] = useState("");
   const [newTerm, setNewTerm] = useState("");
+  const [newObservation, setNewObservation] = useState(""); // New state
   const [showPreview, setShowPreview] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [quotationCount, setQuotationCount] = useState(null);
@@ -100,19 +105,12 @@ const AddQuotation = () => {
     
     setQuotationData(prev => {
       const updatedProducts = prev.quotationProducts.filter(product => product.id !== productId);
-      const newSubTotal = updatedProducts.reduce((total, product) => 
-        total + product.items.reduce((sum, item) => sum + Number(item.amount), 0), 0
-      );
-      const gstPercent = Number(prev.gst) || 0;
-      const taxAmount = (newSubTotal * gstPercent) / 100;
-      const grandTotal = newSubTotal + taxAmount;
+      const newData = { ...prev, quotationProducts: updatedProducts };
+      const totals = calculateTotals(newData);
       
       return {
-        ...prev,
-        quotationProducts: updatedProducts,
-        subTotal: newSubTotal,
-        taxAmount,
-        grandTotal
+        ...newData,
+        ...totals
       };
     });
     
@@ -176,19 +174,12 @@ const AddQuotation = () => {
         return product;
       });
       
-      const newSubTotal = updatedProducts.reduce((total, product) => 
-        total + product.items.reduce((sum, item) => sum + Number(item.amount), 0), 0
-      );
-      const gstPercent = Number(prev.gst) || 0;
-      const taxAmount = (newSubTotal * gstPercent) / 100;
-      const grandTotal = newSubTotal + taxAmount;
+      const newData = { ...prev, quotationProducts: updatedProducts };
+      const totals = calculateTotals(newData);
       
       return {
-        ...prev,
-        quotationProducts: updatedProducts,
-        subTotal: newSubTotal,
-        taxAmount,
-        grandTotal
+        ...newData,
+        ...totals
       };
     });
     
@@ -211,19 +202,12 @@ const AddQuotation = () => {
         return product;
       });
       
-      const newSubTotal = updatedProducts.reduce((total, product) => 
-        total + product.items.reduce((sum, item) => sum + Number(item.amount), 0), 0
-      );
-      const gstPercent = Number(prev.gst) || 0;
-      const taxAmount = (newSubTotal * gstPercent) / 100;
-      const grandTotal = newSubTotal + taxAmount;
+      const newData = { ...prev, quotationProducts: updatedProducts };
+      const totals = calculateTotals(newData);
       
       return {
-        ...prev,
-        quotationProducts: updatedProducts,
-        subTotal: newSubTotal,
-        taxAmount,
-        grandTotal
+        ...newData,
+        ...totals
       };
     });
     
@@ -283,6 +267,53 @@ const AddQuotation = () => {
     toast.success("Term removed successfully!");
   };
 
+  // Observation handlers
+  const handleAddObservation = () => {
+    if (newObservation.trim()) {
+      setQuotationData(prev => ({
+        ...prev,
+        customObservations: [...prev.customObservations, newObservation.trim()]
+      }));
+      setNewObservation("");
+      toast.success("Observation added successfully!");
+    } else {
+      toast.error("Please enter an observation!");
+    }
+  };
+
+  const handleRemoveObservation = (index) => {
+    setQuotationData(prev => ({
+      ...prev,
+      customObservations: prev.customObservations.filter((_, i) => i !== index)
+    }));
+    toast.success("Observation removed successfully!");
+  };
+
+  // Enhanced calculation function
+  const calculateTotals = (data) => {
+    const subTotal = data.quotationProducts.reduce((total, product) => 
+      total + product.items.reduce((sum, item) => sum + Number(item.amount), 0), 0
+    );
+    
+    const transport = Number(data.transport) || 0;
+    const food = Number(data.food) || 0;
+    const discount = Number(data.discount) || 0;
+    const gstPercent = Number(data.gst) || 0;
+    
+    const beforeTax = subTotal + transport + food - discount;
+    const taxAmount = (beforeTax * gstPercent) / 100;
+    const grandTotal = beforeTax + taxAmount;
+    
+    return {
+      subTotal,
+      transport,
+      food,
+      discount,
+      taxAmount,
+      grandTotal
+    };
+  };
+
   const previewData = {
     brand: {
       name: "SLA Invisible Grills",
@@ -301,6 +332,9 @@ const AddQuotation = () => {
     },
     quotationProducts: quotationData.quotationProducts,
     subTotal: quotationData.subTotal,
+    transport: quotationData.transport,
+    food: quotationData.food,
+    discount: quotationData.discount,
     tax: { label: `GST (${quotationData.gst || 0}%)`, value: quotationData.taxAmount },
     grandTotal: quotationData.grandTotal,
     notes: quotationData.customNotes.length > 0 ? quotationData.customNotes : [
@@ -313,6 +347,7 @@ const AddQuotation = () => {
       "All goods remains property of SLA Invisible Grills until full payment is received.",
       "Please check Warranty Terms & Conditions of your product in your Invoice bill."
     ],
+    observations: quotationData.customObservations,
     manager: {
       name: "Sreekanth Chowdary",
       role: "Managing Partner",
@@ -399,7 +434,7 @@ const AddQuotation = () => {
     }
   };
 
-  // Add validation for GST input
+  // Updated GST handler
   const handleGSTChange = (e) => {
     const gst = e.target.value.replace(/[^\d.]/g, "");
     
@@ -409,19 +444,40 @@ const AddQuotation = () => {
       return;
     }
     
-    const subTotal = quotationData.subTotal;
-    const taxAmount = (subTotal * Number(gst)) / 100;
-    const grandTotal = subTotal + taxAmount;
-    setQuotationData((prev) => ({
-      ...prev,
-      gst,
-      taxAmount,
-      grandTotal,
-    }));
+    setQuotationData(prev => {
+      const newData = { ...prev, gst };
+      const totals = calculateTotals(newData);
+      
+      return {
+        ...newData,
+        ...totals
+      };
+    });
     
     if (gst) {
       toast.success(`GST updated to ${gst}%`);
     }
+  };
+
+  // Handle transport, food, discount changes
+  const handleSummaryFieldChange = (field, value) => {
+    // Validate numeric input
+    const numericValue = value.replace(/[^\d.]/g, "");
+    
+    if (numericValue && parseFloat(numericValue) < 0) {
+      toast.error(`${field.charAt(0).toUpperCase() + field.slice(1)} cannot be negative!`);
+      return;
+    }
+    
+    setQuotationData(prev => {
+      const newData = { ...prev, [field]: numericValue };
+      const totals = calculateTotals(newData);
+      
+      return {
+        ...newData,
+        ...totals
+      };
+    });
   };
 
   return (
@@ -717,7 +773,52 @@ const AddQuotation = () => {
                 <tbody>
                   <tr>
                     <td>Sub Total</td>
-                    <td>{quotationData.subTotal.toFixed(2)}</td>
+                    <td>₹{quotationData.subTotal.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>Transport</td>
+                    <td>
+                      <input
+                        type="text"
+                        value={quotationData.transport}
+                        onChange={(e) => handleSummaryFieldChange('transport', e.target.value)}
+                        className="quotation-tax-input"
+                        placeholder="0"
+                        style={{ width: '60px' }}
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Food</td>
+                    <td>
+                      <input
+                        type="text"
+                        value={quotationData.food}
+                        onChange={(e) => handleSummaryFieldChange('food', e.target.value)}
+                        className="quotation-tax-input"
+                        placeholder="0"
+                        style={{ width: '60px' }}
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Discount</td>
+                    <td>
+                      <input
+                        type="text"
+                        value={quotationData.discount}
+                        onChange={(e) => handleSummaryFieldChange('discount', e.target.value)}
+                        className="quotation-tax-input"
+                        placeholder="0"
+                        style={{ 
+                          width: '60px', 
+                          color: '#16a34a',
+                          background: '#f0fdf4',
+                          borderColor: '#22c55e',
+                          fontWeight: '600'
+                        }}
+                      />
+                    </td>
                   </tr>
                   <tr>
                     <td>GST (%)</td>
@@ -734,11 +835,11 @@ const AddQuotation = () => {
                   </tr>
                   <tr>
                     <td>Tax Amount</td>
-                    <td>{quotationData.taxAmount.toFixed(2)}</td>
+                    <td>₹{quotationData.taxAmount.toFixed(2)}</td>
                   </tr>
                   <tr className="quotation-grand-total-row">
                     <td>Grand Total</td>
-                    <td>{quotationData.grandTotal.toFixed(2)}</td>
+                    <td>₹{quotationData.grandTotal.toFixed(2)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -771,6 +872,40 @@ const AddQuotation = () => {
                     className="delete-quotation-note-btn"
                     onClick={() => handleRemoveNote(idx)}
                     title="Delete Note"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Observations/Risks Section */}
+          <div className="quotation-observations-section">
+            <h3>Observations / Risks:</h3>
+            <span className="quotation-desc">Add observations, risks, or special considerations</span>
+            <div className="quotation-observations-add-row">
+              <input
+                type="text"
+                value={newObservation}
+                onChange={(e) => setNewObservation(e.target.value)}
+                placeholder="Enter observation or risk..."
+                className="quotation-observations-input"
+                onKeyPress={(e) => e.key === 'Enter' && handleAddObservation()}
+              />
+              <button type="button" onClick={handleAddObservation} className="add-quotation-observations-btn">
+                <Layers /> Add Observation
+              </button>
+            </div>
+            <div className="quotation-observations-list">
+              {quotationData.customObservations.map((observation, idx) => (
+                <div key={idx} className="quotation-observation-item">
+                  <span>{observation}</span>
+                  <button
+                    type="button"
+                    className="delete-quotation-observation-btn"
+                    onClick={() => handleRemoveObservation(idx)}
+                    title="Delete Observation"
                   >
                     ×
                   </button>
@@ -907,12 +1042,39 @@ const AddQuotation = () => {
                 )
               ))}
 
-              {/* Overall Summary */}
+              {/* Updated Overall Summary */}
               <div className="quotation-preview-overall-summary">
                 <div className="quotation-summary-row">
                   <span>Sub Total</span>
                   <span className="quotation-bold">₹{previewData.subTotal.toFixed(2)}</span>
                 </div>
+                {previewData.transport > 0 && (
+                  <div className="quotation-summary-row">
+                    <span>Transport</span>
+                    <span>₹{Number(previewData.transport).toFixed(2)}</span>
+                  </div>
+                )}
+                {previewData.food > 0 && (
+                  <div className="quotation-summary-row">
+                    <span>Food</span>
+                    <span>₹{Number(previewData.food).toFixed(2)}</span>
+                  </div>
+                )}
+                {previewData.discount > 0 && (
+                  <div className="quotation-summary-row quotation-discount">
+                    <span>Discount</span>
+                    <span style={{ 
+                      color: '#16a34a',
+                      fontWeight: '700',
+                      background: '#dcfce7',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      border: '1px solid #22c55e'
+                    }}>
+                      -₹{Number(previewData.discount).toFixed(2)} 💰
+                    </span>
+                  </div>
+                )}
                 <div className="quotation-summary-row">
                   <span>{previewData.tax.label}</span>
                   <span>₹{previewData.tax.value.toFixed(2)}</span>
@@ -923,7 +1085,7 @@ const AddQuotation = () => {
                 </div>
               </div>
 
-              {/* ...existing notes and terms preview... */}
+              {/* Notes */}
               <div className="quotation-preview-notes">
                 <div className="quotation-notes-title">NOTES:</div>
                 <div className="quotation-notes-content">
@@ -932,6 +1094,19 @@ const AddQuotation = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Observations/Risks - Only show if there are observations */}
+              {previewData.observations.length > 0 && (
+                <div className="quotation-preview-observations">
+                  <div className="quotation-observations-title">OBSERVATIONS / RISKS:</div>
+                  <div className="quotation-observations-content">
+                    {previewData.observations.map((observation, idx) => (
+                      <div key={idx}>⚠️ {observation}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="quotation-preview-terms-manager-row">
                 <div className="quotation-terms">
                   <div className="quotation-terms-title">Term & Condition :</div>

@@ -1232,190 +1232,237 @@
   transform: none !important;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .add-quotation-main-container {
-        padding: 8px;
-    }
-    
-    .quotation-label-row {
-        flex-direction: column;
-        gap: 12px;
-    }
-    
-    .quotation-label-field {
-        min-width: auto;
-    }
-    
-    .quotation-from-to-row {
-        flex-direction: column;
-        gap: 16px;
-    }
-    
-    .quotation-from,
-    .quotation-to {
-        min-width: auto;
-    }
-    
-    .add-quotation-bottom-row {
-        flex-direction: column;
-        gap: 16px;
-    }
-    
-    .add-quotation-items-main-container.bottom-left,
-    .add-quotation-summary-container.bottom-right {
-        min-width: auto;
-    }
-    
-    .add-quotation-item-row {
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    
-    .add-quotation-item-row input {
-        width: calc(50% - 4px);
-        min-width: 120px;
-    }
-    
-    .add-quotation-item-btn {
-        width: 100%;
-        justify-content: center;
-        margin-top: 8px;
-    }
-    
-    .quotation-items-list {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .quotation-preview-brand-row {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .quotation-info {
-        text-align: center;
-    }
-    
-    .quotation-preview-to-from-row {
-        flex-direction: column;
-        gap: 16px;
-    }
-    
-    .quotation-preview-terms-manager-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-    }
-    
-    .quotation-manager {
-        text-align: left;
-    }
-    
-    .quotation-notes-add-row,
-    .quotation-terms-add-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-    }
-    
-    .quotation-notes-input,
-    .quotation-terms-input {
-        min-width: auto;
-    }
-    
-    .add-quotation-notes-btn,
-    .add-quotation-terms-btn {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .quotation-actions-container {
-        justify-content: center;
-    }
-    
-    .quotation-preview-header {
-        flex-direction: column;
-        text-align: center;
-    }
+/* Observations/Risks Section */
+.quotation-observations-section {
+  margin-top: clamp(16px, 2.5vw, 24px);
+  background: #fff8f0;
+  border-radius: 8px;
+  padding: clamp(12px, 2vw, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.5vw, 12px);
+  border: 1px solid #fed7aa;
 }
 
-/* Small Mobile (max-width: 480px) */
+.quotation-observations-section h3 {
+  font-size: clamp(13px, 1.8vw, 15px);
+  font-weight: 700;
+  margin-bottom: 2px;
+  color: #ea580c;
+}
+
+.quotation-observations-add-row {
+  display: flex;
+  gap: clamp(8px, 1.5vw, 12px);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.quotation-observations-input {
+  flex: 1;
+  min-width: 200px;
+  height: clamp(36px, 5vw, 40px);
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 0 clamp(8px, 1.5vw, 12px);
+  font-size: clamp(12px, 1.5vw, 14px);
+  background: #fff;
+  box-sizing: border-box;
+  transition: all 0.2s;
+}
+
+.quotation-observations-input:focus {
+  outline: none;
+  border-color: #ea580c;
+  box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.1);
+}
+
+.add-quotation-observations-btn {
+  background: #ea580c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0 clamp(12px, 2vw, 16px);
+  height: clamp(36px, 5vw, 40px);
+  display: flex;
+  align-items: center;
+  gap: clamp(4px, 0.8vw, 6px);
+  font-size: clamp(12px, 1.5vw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.add-quotation-observations-btn:hover {
+  background: #c2410c;
+  transform: translateY(-1px);
+}
+
+.quotation-observations-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1vw, 8px);
+  margin-top: clamp(6px, 1vw, 8px);
+}
+
+.quotation-observation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  padding: clamp(6px, 1vw, 8px) clamp(8px, 1.5vw, 12px);
+  font-size: clamp(11px, 1.3vw, 13px);
+  color: #9a3412;
+  gap: clamp(8px, 1.5vw, 12px);
+}
+
+.delete-quotation-observation-btn {
+  background: #ea4d4d;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: clamp(20px, 3vw, 24px);
+  height: clamp(20px, 3vw, 24px);
+  font-size: clamp(12px, 1.5vw, 16px);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.delete-quotation-observation-btn:hover {
+  background: #c53030;
+}
+
+/* Preview Observations */
+.quotation-preview-observations {
+  background: #fff8f0;
+  border: 1px dashed #ea580c;
+  border-radius: 8px;
+  padding: clamp(12px, 2vw, 16px);
+  margin-top: clamp(12px, 2vw, 18px);
+  margin-bottom: clamp(12px, 2vw, 18px);
+}
+
+.quotation-observations-title {
+  font-size: clamp(11px, 1.3vw, 13px);
+  font-weight: 700;
+  color: #ea580c;
+  margin-bottom: clamp(4px, 0.8vw, 6px);
+}
+
+.quotation-observations-content {
+  font-size: clamp(11px, 1.3vw, 13px);
+  color: #9a3412;
+  line-height: 1.4;
+}
+
+/* Enhanced summary table styles for new fields */
+.quotation-summary-table td input {
+  text-align: center;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.quotation-summary-table td input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  transform: scale(1.02);
+}
+
+/* Discount styling - Updated to green */
+.quotation-summary-row.quotation-discount {
+  background: #f0fdf4;
+  border-left: 3px solid #22c55e;
+  margin: clamp(4px, 0.8vw, 6px) 0;
+  padding-left: clamp(8px, 1.5vw, 12px);
+  border-radius: 6px;
+}
+
+/* Enhanced discount input styling */
+.quotation-summary-table td input[style*="color: #ef4444"] {
+  color: #16a34a !important;
+  background: #f0fdf4 !important;
+  border-color: #22c55e !important;
+  font-weight: 600 !important;
+}
+
+.quotation-summary-table td input[style*="color: #ef4444"]:focus {
+  border-color: #16a34a !important;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
+}
+
+/* Mobile Responsive Updates */
+@media (max-width: 768px) {
+  /* ...existing code... */
+
+  .quotation-observations-add-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .quotation-observations-input {
+    min-width: auto;
+  }
+
+  .add-quotation-observations-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .quotation-summary-table td input {
+    width: 50px;
+    font-size: 12px;
+    padding: 4px 6px;
+  }
+}
+
 @media (max-width: 480px) {
-    .add-quotation-form-container.full-width {
-        padding: 12px;
-    }
-    
-    .quotation-brand-upload-section {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .add-quotation-item-row input {
-        width: 100%;
-        min-width: auto;
-    }
-    
-    .quotation-summary-table {
-        font-size: 12px;
-    }
-    
-    .quotation-summary-table td {
-        padding: 6px 8px;
-    }
-    
-    .quotation-tax-input {
-        width: 30px;
-    }
-    
-    .quotation-preview-content {
-        padding: 12px;
-    }
-    
-    .quotation-preview-summary {
-        max-width: 100%;
-    }
-    
-    .quotation-item-row {
-        font-size: 10px;
-        min-width: 500px;
-    }
-    
-    .quotation-item-row span {
-        padding: 2px 4px;
-        min-width: 60px;
-    }
+  /* ...existing code... */
+
+  .quotation-observations-section {
+    padding: 12px;
+  }
+
+  .add-quotation-observations-btn {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .quotation-summary-table td input {
+    width: 45px;
+    font-size: 11px;
+  }
 }
 
 /* Touch-friendly improvements */
 @media (hover: none) and (pointer: coarse) {
-    .add-quotation-item-btn,
-    .add-quotation-notes-btn,
-    .add-quotation-terms-btn,
-    .quotation-template-btn,
-    .quotation-preview-save-btn {
-        min-height: 44px;
-    }
-    
-    .quotation-notes-input,
-    .quotation-terms-input,
-    .add-quotation-item-row input,
-    .quotation-label-field input {
-        font-size: 16px; /* Prevent zoom on iOS */
-        min-height: 44px;
-    }
-    
-    .delete-quotation-item-btn,
-    .delete-quotation-note-btn,
-    .delete-quotation-term-btn {
-        min-width: 44px;
-        min-height: 44px;
-    }
-    
-    .quotation-tax-input {
-        min-height: 44px;
-        font-size: 16px;
-    }
+  .add-quotation-observations-btn {
+    min-height: 44px;
+  }
+
+  .quotation-observations-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+    min-height: 44px;
+  }
+
+  .delete-quotation-observation-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .quotation-summary-table td input {
+    min-height: 44px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
 }
 
 /* iOS Safari specific fixes */

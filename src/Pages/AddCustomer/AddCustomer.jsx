@@ -262,7 +262,21 @@ const AddCustomer = () => {
             </div>
           </div>
 
-          
+          {/* Email - Optional */}
+          <div className="input-container">
+            <p className="input-label">Email :</p>
+            <div className="input-con">
+              <div className="icon-con"><Mail className="icon" /></div>
+              <input 
+                type="email" 
+                name="email" 
+                value={formData.email} 
+                onChange={handleChange} 
+                placeholder="Customer Email (Optional)" 
+              />
+            </div>
+          </div>
+
         </form>
       </div>
     </>
