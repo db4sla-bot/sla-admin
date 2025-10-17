@@ -42,6 +42,11 @@ export const MenuItemsData = [
                     link: '/materialsinvestment'
                 },
                 {
+                    id: 'assetinvestment',
+                    label: 'Asset Investment',
+                    link: '/assetinvestment'
+                },
+                {
                     id: 'payroll',
                     label: 'Payroll',
                     link: '/payroll'

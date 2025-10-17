@@ -19,7 +19,8 @@ const Dashboard = () => {
     payments: [],
     payroll: [],
     materialsInvestment: [],
-    dailyExpenses: [] // Now included
+    dailyExpenses: [],
+    assetInvestment: [] // Add asset investment
   })
   
   // Filter states
@@ -55,10 +56,11 @@ const Dashboard = () => {
         getDocs(collection(db, 'Payments')).catch(() => ({ docs: [] })),
         getDocs(collection(db, 'Payroll')).catch(() => ({ docs: [] })),
         getDocs(collection(db, 'MaterialsInvestment')).catch(() => ({ docs: [] })),
-        getDocs(collection(db, 'DailyExpenses')).catch(() => ({ docs: [] }))
+        getDocs(collection(db, 'DailyExpenses')).catch(() => ({ docs: [] })),
+        getDocs(collection(db, 'AssetInvestment')).catch(() => ({ docs: [] })) // Add this
       ]
       
-      const [customers, materials, payments, payroll, materialsInvestment, dailyExpenses] = await Promise.all(promises)
+      const [customers, materials, payments, payroll, materialsInvestment, dailyExpenses, assetInvestment] = await Promise.all(promises)
 
       console.log('Data fetched:', { 
         customers: customers.docs.length, 
@@ -66,7 +68,8 @@ const Dashboard = () => {
         payments: payments.docs.length,
         payroll: payroll.docs.length,
         materialsInvestment: materialsInvestment.docs.length,
-        dailyExpenses: dailyExpenses.docs.length
+        dailyExpenses: dailyExpenses.docs.length,
+        assetInvestment: assetInvestment.docs.length // Add this
       }) // Debug log
 
       const dashboardDataNew = {
@@ -91,20 +94,25 @@ const Dashboard = () => {
           id: doc.id, 
           ...doc.data(),
           expenseDate: doc.data().expenseDate?.toDate?.() || new Date(doc.data().createdDate || Date.now())
+        })),
+        assetInvestment: assetInvestment.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate?.() || new Date(doc.data().createdDate || Date.now())
         }))
       }
       
       setDashboardData(dashboardDataNew)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
-      // Set empty data instead of leaving it undefined
       setDashboardData({
         customers: [],
         materials: [],
         payments: [],
         payroll: [],
         materialsInvestment: [],
-        dailyExpenses: []
+        dailyExpenses: [],
+        assetInvestment: []
       })
     }
     setLoading(false)
@@ -162,6 +170,11 @@ const Dashboard = () => {
         if (!dateRange) return true
         const date = new Date(expense.expenseDate)
         return date >= dateRange.start && date <= dateRange.end
+      }) : [],
+      assetInvestment: dashboardData.assetInvestment ? dashboardData.assetInvestment.filter(asset => {
+        if (!dateRange) return true
+        const date = new Date(asset.createdAt)
+        return date >= dateRange.start && date <= dateRange.end
       }) : []
     }
     
@@ -179,6 +192,7 @@ const Dashboard = () => {
         payrollExpenses: 0,
         materialExpenses: 0,
         dailyExpensesAmount: 0,
+        assetInvestmentAmount: 0, // Add this
         revenueGrowth: 0,
         expenseGrowth: 0
       }
@@ -188,8 +202,9 @@ const Dashboard = () => {
     const payrollExpenses = (filteredData.payroll || []).reduce((sum, payroll) => sum + (payroll.netSalary || 0), 0)
     const materialExpenses = (filteredData.materialsInvestment || []).reduce((sum, investment) => sum + (investment.amount || 0), 0)
     const dailyExpensesAmount = (filteredData.dailyExpenses || []).reduce((sum, expense) => sum + (expense.amount || 0), 0)
+    const assetInvestmentAmount = (filteredData.assetInvestment || []).reduce((sum, asset) => sum + (asset.amount || 0), 0) // Add this
     
-    const totalExpenses = payrollExpenses + materialExpenses + dailyExpensesAmount
+    const totalExpenses = payrollExpenses + materialExpenses + dailyExpensesAmount + assetInvestmentAmount // Include asset investment
     const profit = revenue - totalExpenses
     const profitMargin = revenue > 0 ? (profit / revenue) * 100 : 0
     
@@ -205,6 +220,7 @@ const Dashboard = () => {
       payrollExpenses,
       materialExpenses,
       dailyExpensesAmount,
+      assetInvestmentAmount, // Add this
       revenueGrowth,
       expenseGrowth
     }
@@ -242,7 +258,13 @@ const Dashboard = () => {
           const date = new Date(p.expenseDate)
           return date >= monthStart && date <= monthEnd
         })
-        .reduce((sum, p) => sum + (p.amount || 0), 0)
+        .reduce((sum, p) => sum + (p.amount || 0), 0) +
+        dashboardData.assetInvestment
+        .filter(p => {
+          const date = new Date(p.createdAt)
+          return date >= monthStart && date <= monthEnd
+        })
+        .reduce((sum, p) => sum + (p.amount || 0), 0) // Add this
       
       return {
         month,
@@ -414,6 +436,10 @@ const Dashboard = () => {
                 <div className="dashboard-expense-item">
                   <span className="dashboard-expense-label">💰 Daily Expenses:</span>
                   <span className="dashboard-expense-amount">₹{financials.dailyExpensesAmount.toLocaleString()}</span>
+                </div>
+                <div className="dashboard-expense-item">
+                  <span className="dashboard-expense-label">🏢 Assets:</span>
+                  <span className="dashboard-expense-amount">₹{financials.assetInvestmentAmount.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -677,7 +703,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Investment Analysis */}
+        {/* Investment Analysis - Updated */}
         <div className="dashboard-investment-row">
           <div className="dashboard-investment-card">
             <div className="dashboard-investment-header">
@@ -726,6 +752,21 @@ const Dashboard = () => {
                   </div>
                   <div className="dashboard-investment-count">
                     {filteredData.dailyExpenses?.length || 0} expense records
+                  </div>
+                </div>
+              </div>
+
+              <div className="dashboard-investment-item asset-investment">
+                <div className="dashboard-investment-icon">
+                  <Package size={24} />
+                </div>
+                <div className="dashboard-investment-details">
+                  <div className="dashboard-investment-label">Asset Investment</div>
+                  <div className="dashboard-investment-amount">
+                    ₹{filteredData.assetInvestment?.reduce((sum, asset) => sum + (asset.amount || 0), 0).toLocaleString() || '0'}
+                  </div>
+                  <div className="dashboard-investment-count">
+                    {filteredData.assetInvestment?.length || 0} assets
                   </div>
                 </div>
               </div>

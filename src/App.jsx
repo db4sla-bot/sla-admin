@@ -59,6 +59,7 @@ import PWAInstallPrompt from './Components/PWAInstallPrompt/PWAInstallPrompt'
 import PWAUpdateNotification from './Components/PWAUpdateNotification/PWAUpdateNotification'
 import MonthlyExpenses from './Pages/MonthlyExpenses/MonthlyExpenses'
 import PWAUpdater from './Components/PWAUpdater/PWAUpdater'
+import AssetInvestment from './Pages/AssetInvestment/AssetInvestment'
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -265,6 +266,7 @@ const App = () => {
                 <Route path="/appointments" element={<Appointments />} />
                 <Route path="/addappointment" element={<AddAppointment />} />
                 <Route path="/projects" element={<Projects />} />
+                <Route path="/assetinvestment" element={<AssetInvestment />} />
               </Routes>
             </div>
           </div>

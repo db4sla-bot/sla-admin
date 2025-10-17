@@ -650,6 +650,15 @@
   background: linear-gradient(135deg, #EAB308, #CA8A04);
 }
 
+.dashboard-investment-item.asset-investment {
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  border: 1px solid #8B5CF6;
+}
+
+.dashboard-investment-item.asset-investment .dashboard-investment-icon {
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+}
+
 .dashboard-investment-item:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(0,0,0,0.1);
