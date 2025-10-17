@@ -45,7 +45,7 @@ const AddEmployee = () => {
     phone: "",
     username: "",
     password: "",
-    designation: "", // Add designation to formData
+    designation: "",
     dob: "",
     address: "",
     city: "",
@@ -66,6 +66,9 @@ const AddEmployee = () => {
 
     // Marital Status
     maritalStatus: "",
+    
+    // Aadhar Card
+    aadharNumber: "", // Add Aadhar number field
   });
 
   const [access, setAccess] = useState([]); // array of selected ids
@@ -73,8 +76,8 @@ const AddEmployee = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // numeric only for phone and phonepe
-    if (name === "phone" || name === "phonepeNumber") {
+    // numeric only for phone, phonepe, and aadhar
+    if (name === "phone" || name === "phonepeNumber" || name === "aadharNumber") {
       const digitsOnly = value.replace(/\D/g, "");
       setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
       return;
@@ -115,7 +118,7 @@ const AddEmployee = () => {
     if (!formData.username.trim()) return "Username is required";
     if (!formData.password.trim()) return "Password is required";
     if (status === "Select the Status") return "Status is required";
-    if (!formData.designation.trim()) return "Designation is required"; // Change validation
+    if (!formData.designation.trim()) return "Designation is required";
 
     // Additional info
     if (!formData.dob) return "Date of Birth is required";
@@ -123,6 +126,10 @@ const AddEmployee = () => {
     if (!formData.city.trim()) return "City is required";
     if (!formData.state.trim()) return "State is required";
     if (!formData.maritalStatus.trim()) return "Marital Status is required";
+    
+    // Aadhar validation
+    if (!formData.aadharNumber.trim()) return "Aadhar Card Number is required";
+    if (!/^\d{12}$/.test(formData.aadharNumber)) return "Aadhar Card Number must be 12 digits";
 
     // Bank info
     if (!formData.bankName.trim()) return "Bank Name is required";
@@ -189,7 +196,7 @@ const AddEmployee = () => {
         phone: "",
         username: "",
         password: "",
-        designation: "", // Reset designation in formData
+        designation: "",
         dob: "",
         address: "",
         city: "",
@@ -204,6 +211,7 @@ const AddEmployee = () => {
         passedOutYear: "",
         yearsExperience: "",
         maritalStatus: "",
+        aadharNumber: "", // Reset Aadhar number
       });
       setStatus("Select the Status");
       setStatusColor("#3454d1");
@@ -635,8 +643,7 @@ const AddEmployee = () => {
           <div className="input-container">
             <p className="input-label">City :</p>
             <div className="input-con">
-              <div
-                className="icon-con">
+              <div className="icon-con">
                 <MapPin className="icon" />
               </div>
               <input
@@ -679,6 +686,24 @@ const AddEmployee = () => {
                 name="country"
                 value={formData.country}
                 disabled
+              />
+            </div>
+          </div>
+
+          {/* Aadhar Card Number - New Field */}
+          <div className="input-container">
+            <p className="input-label">Aadhar Card Number :</p>
+            <div className="input-con">
+              <div className="icon-con">
+                <User className="icon" />
+              </div>
+              <input
+                type="text"
+                placeholder="Enter 12-digit Aadhar Number"
+                name="aadharNumber"
+                value={formData.aadharNumber}
+                onChange={handleChange}
+                maxLength={12}
               />
             </div>
           </div>
