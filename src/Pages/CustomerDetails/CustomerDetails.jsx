@@ -10,7 +10,8 @@ import {
   query,
   where,
   Timestamp,
-  arrayUnion
+  arrayUnion,
+  increment
 } from 'firebase/firestore';
 import { db } from '../../Firebase';
 import './CustomerDetails.css';
@@ -173,11 +174,11 @@ const CustomerDetails = () => {
           state: data.state || '',
           country: data.country || 'India'
         });
-        setWorks(data.works || []);
-        setCustomerMaterials(data.materials || []);
-        setPayments(data.payments || []);
-        setExpenses(data.expenses || []);
-        setActivities(data.activities || []);
+        setWorks(Array.isArray(data.works) ? data.works : []);
+        setCustomerMaterials(Array.isArray(data.materials) ? data.materials : []);
+        setPayments(Array.isArray(data.payments) ? data.payments : []);
+        setExpenses(Array.isArray(data.expenses) ? data.expenses : []);
+        setActivities(Array.isArray(data.activities) ? data.activities : []);
       } else {
         toast.error('Customer not found!');
         navigate('/customers');
@@ -212,14 +213,17 @@ const CustomerDetails = () => {
         updatedAt: new Date().toISOString()
       });
       
-      await addActivity('profile', 'Profile Updated', `Customer profile information was updated`);
-      
       setCustomer(prev => ({ ...prev, ...profileForm }));
       setEditProfile(false);
       toast.success('Profile updated successfully!');
+      
+      // Log activity (don't await to avoid blocking)
+      addActivity('profile', 'Profile Updated', `Customer profile information was updated`).catch(err => {
+        console.error('Failed to log activity:', err);
+      });
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+      toast.error(`Failed to update profile: ${error.message}`);
     }
   };
 
@@ -244,18 +248,20 @@ const CustomerDetails = () => {
       
       const customerRef = doc(db, 'Customers', customerId);
       await updateDoc(customerRef, {
-        works: updatedWorks,
-        updatedAt: new Date().toISOString()
+        works: updatedWorks
       });
-      
-      await addActivity('work', 'Work Added', `New work added: ${newWork.title} (${newWork.category})`);
       
       setWorks(updatedWorks);
       setWorkForm({ workTitle: '', category: '' });
       toast.success('Work added successfully!');
+      
+      // Log activity (don't await to avoid blocking)
+      addActivity('work', 'Work Added', `New work added: ${newWork.title} (${newWork.category})`).catch(err => {
+        console.error('Failed to log activity:', err);
+      });
     } catch (error) {
       console.error('Error adding work:', error);
-      toast.error('Failed to add work');
+      toast.error(`Failed to add work: ${error.message}`);
     }
     setSavingWork(false);
   };
@@ -285,20 +291,26 @@ const CustomerDetails = () => {
       return;
     }
     
+    // Validate material price
+    const unitPrice = Number(selectedMaterial.price) || 0;
+    if (unitPrice === 0) {
+      toast.warning('Material price is not set. Cost will be recorded as ₹0');
+    }
+    
     setSavingMaterial(true);
     try {
       const work = works.find(w => w.id === selectedWork);
-      const totalCost = (selectedMaterial.price || 0) * qty;
+      const totalCost = unitPrice * qty;
       
       const newMaterial = {
         id: Date.now().toString(),
         workId: selectedWork,
         workTitle: work?.title || '',
         materialId: selectedMaterial.id,
-        materialName: selectedMaterial.name,
-        category: selectedMaterial.category,
+        materialName: selectedMaterial.name || 'Unknown Material',
+        category: selectedMaterial.category || 'Uncategorized',
         quantity: qty,
-        unitPrice: selectedMaterial.price || 0,
+        unitPrice: unitPrice,
         totalCost: totalCost,
         addedAt: new Date().toISOString()
       };
@@ -311,16 +323,19 @@ const CustomerDetails = () => {
         updatedAt: new Date().toISOString()
       });
       
-      await addActivity('material', 'Material Added', `Added ${qty} units of ${selectedMaterial.name} for ${work?.title}`);
-      
       setCustomerMaterials(updatedMaterials);
       setSelectedWork('');
       setSelectedMaterial(null);
       setMaterialQuantity('');
       toast.success('Material added successfully!');
+      
+      // Log activity (don't await to avoid blocking)
+      addActivity('material', 'Material Added', `Added ${qty} units of ${selectedMaterial.name || 'material'} for ${work?.title || 'work'}`).catch(err => {
+        console.error('Failed to log activity:', err);
+      });
     } catch (error) {
       console.error('Error adding material:', error);
-      toast.error('Failed to add material');
+      toast.error(`Failed to add material: ${error.message}`);
     }
     setSavingMaterial(false);
   };
@@ -352,17 +367,20 @@ const CustomerDetails = () => {
         updatedAt: new Date().toISOString()
       });
       
-      await addActivity('payment', 'Payment Record Created', `Payment record created for ${work?.title} - Total: ₹${newPayment.totalAmount}`);
-      
       setPayments(updatedPayments);
       setPaymentForm({
         workId: '',
         totalAmount: ''
       });
       toast.success('Payment record created successfully!');
+      
+      // Log activity (don't await to avoid blocking)
+      addActivity('payment', 'Payment Record Created', `Payment record created for ${work?.title} - Total: ₹${newPayment.totalAmount}`).catch(err => {
+        console.error('Failed to log activity:', err);
+      });
     } catch (error) {
       console.error('Error creating payment record:', error);
-      toast.error('Failed to create payment record');
+      toast.error(`Failed to create payment record: ${error.message}`);
     }
     setSavingPayment(false);
   };
@@ -416,8 +434,6 @@ const CustomerDetails = () => {
         updatedAt: new Date().toISOString()
       });
       
-      await addActivity('payment', 'Installment Added', `Payment of ₹${newInstallmentAmount} received for ${payment.workTitle}`);
-      
       setPayments(updatedPayments);
       setInstallmentForm({
         paymentId: '',
@@ -428,9 +444,14 @@ const CustomerDetails = () => {
       });
       setShowInstallmentForm(false);
       toast.success('Installment added successfully!');
+      
+      // Log activity (don't await to avoid blocking)
+      addActivity('payment', 'Installment Added', `Payment of ₹${newInstallmentAmount} received for ${payment.workTitle}`).catch(err => {
+        console.error('Failed to log activity:', err);
+      });
     } catch (error) {
       console.error('Error adding installment:', error);
-      toast.error('Failed to add installment');
+      toast.error(`Failed to add installment: ${error.message}`);
     }
     setSavingInstallment(false);
   };
@@ -464,8 +485,6 @@ const CustomerDetails = () => {
         updatedAt: new Date().toISOString()
       });
       
-      await addActivity('expense', 'Expense Added', `${expenseForm.expenseType} expense of ₹${expenseForm.amount} for ${work?.title}`);
-      
       setExpenses(updatedExpenses);
       setExpenseForm({
         workId: '',
@@ -475,9 +494,14 @@ const CustomerDetails = () => {
         description: ''
       });
       toast.success('Expense added successfully!');
+      
+      // Log activity (don't await to avoid blocking)
+      addActivity('expense', 'Expense Added', `${expenseForm.expenseType} expense of ₹${expenseForm.amount} for ${work?.title}`).catch(err => {
+        console.error('Failed to log activity:', err);
+      });
     } catch (error) {
       console.error('Error adding expense:', error);
-      toast.error('Failed to add expense');
+      toast.error(`Failed to add expense: ${error.message}`);
     }
     setSavingExpense(false);
   };
