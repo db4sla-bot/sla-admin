@@ -131,6 +131,23 @@ const CustomerDetails = () => {
     fetchMaterials();
   }, [customerId]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMaterialDropdown && !event.target.closest('.customer-dropdown-container')) {
+        setShowMaterialDropdown(false);
+      }
+    };
+
+    if (showMaterialDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMaterialDropdown]);
+
   const fetchCustomerData = async () => {
     setLoading(true);
     try {
@@ -443,12 +460,12 @@ const CustomerDetails = () => {
     const workPayments = payments.filter(p => p.workId === workId);
     const workExpenses = expenses.filter(e => e.workId === workId);
     
-    const materialsCost = workMaterials.reduce((sum, m) => sum + (m.totalCost || 0), 0);
-    const totalExpenses = workExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const materialsCost = workMaterials.reduce((sum, m) => sum + (Number(m.totalCost) || 0), 0);
+    const totalExpenses = workExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const totalCost = materialsCost + totalExpenses;
     
-    const totalRevenue = workPayments.reduce((sum, p) => sum + (p.totalPrice || 0), 0);
-    const totalReceived = workPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+    const totalRevenue = workPayments.reduce((sum, p) => sum + (Number(p.totalPrice) || 0), 0);
+    const totalReceived = workPayments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
     const balance = totalRevenue - totalReceived;
     
     const profit = totalRevenue - totalCost;
@@ -469,12 +486,12 @@ const CustomerDetails = () => {
   };
 
   const getOverallAnalytics = () => {
-    const totalMaterialsCost = customerMaterials.reduce((sum, m) => sum + (m.totalCost || 0), 0);
-    const totalExpensesAmount = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const totalMaterialsCost = customerMaterials.reduce((sum, m) => sum + (Number(m.totalCost) || 0), 0);
+    const totalExpensesAmount = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const totalCost = totalMaterialsCost + totalExpensesAmount;
     
-    const totalRevenue = payments.reduce((sum, p) => sum + (p.totalPrice || 0), 0);
-    const totalReceived = payments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+    const totalRevenue = payments.reduce((sum, p) => sum + (Number(p.totalPrice) || 0), 0);
+    const totalReceived = payments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
     const totalBalance = totalRevenue - totalReceived;
     
     const totalProfit = totalRevenue - totalCost;
@@ -966,17 +983,22 @@ const CustomerDetails = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {customerMaterials.map(material => (
-                          <tr key={material.id}>
-                            <td>{material.materialName}</td>
-                            <td>{material.workTitle}</td>
-                            <td><span className="customer-badge">{material.category}</span></td>
-                            <td>{material.quantity}</td>
-                            <td>₹{material.unitPrice}</td>
-                            <td className="customer-amount">₹{material.totalCost.toLocaleString()}</td>
-                            <td>{new Date(material.addedAt).toLocaleDateString()}</td>
-                          </tr>
-                        ))}
+                        {customerMaterials.map(material => {
+                          const unitPrice = Number(material.unitPrice) || 0;
+                          const totalCost = Number(material.totalCost) || 0;
+                          
+                          return (
+                            <tr key={material.id}>
+                              <td>{material.materialName}</td>
+                              <td>{material.workTitle}</td>
+                              <td><span className="customer-badge">{material.category}</span></td>
+                              <td>{material.quantity}</td>
+                              <td>₹{unitPrice.toLocaleString()}</td>
+                              <td className="customer-amount">₹{totalCost.toLocaleString()}</td>
+                              <td>{new Date(material.addedAt).toLocaleDateString()}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -984,7 +1006,7 @@ const CustomerDetails = () => {
                 {customerMaterials.length > 0 && (
                   <div className="customer-total-summary">
                     <span>Total Materials Cost:</span>
-                    <strong>₹{customerMaterials.reduce((sum, m) => sum + m.totalCost, 0).toLocaleString()}</strong>
+                    <strong>₹{customerMaterials.reduce((sum, m) => sum + (Number(m.totalCost) || 0), 0).toLocaleString()}</strong>
                   </div>
                 )}
               </div>
@@ -1088,45 +1110,51 @@ const CustomerDetails = () => {
                 ) : (
                   <>
                     <div className="customer-payment-cards">
-                      {payments.map(payment => (
-                        <div key={payment.id} className="customer-payment-card">
-                          <div className="customer-payment-header">
-                            <h5>{payment.workTitle}</h5>
-                            <span className="customer-payment-mode">{payment.paymentMode}</span>
-                          </div>
-                          <div className="customer-payment-details">
-                            <div className="customer-payment-row">
-                              <span>Total Price:</span>
-                              <strong>₹{payment.totalPrice.toLocaleString()}</strong>
+                      {payments.map(payment => {
+                        const totalPrice = Number(payment.totalPrice) || 0;
+                        const amountPaid = Number(payment.amountPaid) || 0;
+                        const balance = Number(payment.balance) || 0;
+                        
+                        return (
+                          <div key={payment.id} className="customer-payment-card">
+                            <div className="customer-payment-header">
+                              <h5>{payment.workTitle}</h5>
+                              <span className="customer-payment-mode">{payment.paymentMode}</span>
                             </div>
-                            <div className="customer-payment-row success">
-                              <span>Amount Paid:</span>
-                              <strong>₹{payment.amountPaid.toLocaleString()}</strong>
+                            <div className="customer-payment-details">
+                              <div className="customer-payment-row">
+                                <span>Total Price:</span>
+                                <strong>₹{totalPrice.toLocaleString()}</strong>
+                              </div>
+                              <div className="customer-payment-row success">
+                                <span>Amount Paid:</span>
+                                <strong>₹{amountPaid.toLocaleString()}</strong>
+                              </div>
+                              <div className={`customer-payment-row ${balance > 0 ? 'warning' : 'success'}`}>
+                                <span>Balance:</span>
+                                <strong>₹{balance.toLocaleString()}</strong>
+                              </div>
                             </div>
-                            <div className={`customer-payment-row ${payment.balance > 0 ? 'warning' : 'success'}`}>
-                              <span>Balance:</span>
-                              <strong>₹{payment.balance.toLocaleString()}</strong>
+                            <div className="customer-payment-footer">
+                              <span><Calendar size={14} /> {new Date(payment.paymentDate).toLocaleDateString()}</span>
+                              {payment.notes && <p>{payment.notes}</p>}
                             </div>
                           </div>
-                          <div className="customer-payment-footer">
-                            <span><Calendar size={14} /> {new Date(payment.paymentDate).toLocaleDateString()}</span>
-                            {payment.notes && <p>{payment.notes}</p>}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                     <div className="customer-payment-summary">
                       <div className="customer-summary-card">
                         <span>Total Revenue</span>
-                        <strong>₹{payments.reduce((sum, p) => sum + p.totalPrice, 0).toLocaleString()}</strong>
+                        <strong>₹{payments.reduce((sum, p) => sum + (Number(p.totalPrice) || 0), 0).toLocaleString()}</strong>
                       </div>
                       <div className="customer-summary-card success">
                         <span>Total Received</span>
-                        <strong>₹{payments.reduce((sum, p) => sum + p.amountPaid, 0).toLocaleString()}</strong>
+                        <strong>₹{payments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0).toLocaleString()}</strong>
                       </div>
                       <div className="customer-summary-card warning">
                         <span>Total Balance</span>
-                        <strong>₹{payments.reduce((sum, p) => sum + p.balance, 0).toLocaleString()}</strong>
+                        <strong>₹{payments.reduce((sum, p) => sum + (Number(p.balance) || 0), 0).toLocaleString()}</strong>
                       </div>
                     </div>
                   </>
@@ -1233,21 +1261,25 @@ const CustomerDetails = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {expenses.map(expense => (
-                            <tr key={expense.id}>
-                              <td>{expense.workTitle}</td>
-                              <td><span className="customer-badge">{expense.expenseType}</span></td>
-                              <td className="customer-amount">₹{expense.amount.toLocaleString()}</td>
-                              <td>{new Date(expense.expenseDate).toLocaleDateString()}</td>
-                              <td>{expense.description || '-'}</td>
-                            </tr>
-                          ))}
+                          {expenses.map(expense => {
+                            const amount = Number(expense.amount) || 0;
+                            
+                            return (
+                              <tr key={expense.id}>
+                                <td>{expense.workTitle}</td>
+                                <td><span className="customer-badge">{expense.expenseType}</span></td>
+                                <td className="customer-amount">₹{amount.toLocaleString()}</td>
+                                <td>{new Date(expense.expenseDate).toLocaleDateString()}</td>
+                                <td>{expense.description || '-'}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
                     <div className="customer-total-summary">
                       <span>Total Expenses:</span>
-                      <strong>₹{expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}</strong>
+                      <strong>₹{expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0).toLocaleString()}</strong>
                     </div>
                   </>
                 )}
