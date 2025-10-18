@@ -1,588 +1,533 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from "react-router-dom";
-import { doc, getDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from "firebase/firestore";
-import { db } from "../../Firebase";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  doc, 
+  getDoc, 
+  updateDoc, 
+  collection, 
+  getDocs,
+  addDoc,
+  query,
+  where,
+  Timestamp,
+  arrayUnion
+} from 'firebase/firestore';
+import { db } from '../../Firebase';
 import './CustomerDetails.css';
-import Hamburger from "../../Components/Hamburger/Hamburger";
-import { Plus, SquarePen, Trash2, User, ChevronDown } from "lucide-react";
-import { toast } from "react-toastify";
-import { useAppContext } from "../../Context"; // Import context
-
-const paymentModes = ["UPI", "Cash", "Personal", "Employee"];
-
-// Services list for work dropdown
-const servicesList = [
-  "Invisible Grills",
-  "Mosquito Mesh", 
-  "Cloth Hangers",
-  "Artificial Grass",
-  "Bird Spikes"
-];
+import Hamburger from '../../Components/Hamburger/Hamburger';
+import { 
+  User, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  Edit, 
+  Save, 
+  X,
+  Briefcase,
+  Package,
+  IndianRupee,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Plus,
+  Search,
+  Calendar,
+  DollarSign,
+  Hash,
+  ChevronDown,
+  AlertCircle,
+  CheckCircle,
+  ClipboardList
+} from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const CustomerDetails = () => {
   const { customerid } = useParams();
-  const { userDetails } = useAppContext();
+  const navigate = useNavigate();
+  const customerId = customerid; // Map to consistent variable name
+  
+  // State for customer data
   const [customer, setCustomer] = useState(null);
-  const [stage, setStage] = useState('profile');
+  const [loading, setLoading] = useState(true);
   
-  // Work section states - Simplified
-  const [selectedService, setSelectedService] = useState("");
-  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
-  const [workDescription, setWorkDescription] = useState("");
+  // Tab state
+  const [activeTab, setActiveTab] = useState('profile');
   
-  // Material section states
-  const [materialDropdownOpen, setMaterialDropdownOpen] = useState(false);
+  // Edit states
+  const [editProfile, setEditProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+    mobile: '',
+    email: '',
+    address: '',
+    city: '',
+    state: '',
+    country: 'India'
+  });
+  
+  // Work states
+  const [workForm, setWorkForm] = useState({
+    workTitle: '',
+    category: ''
+  });
+  const [works, setWorks] = useState([]);
+  const [savingWork, setSavingWork] = useState(false);
+  
+  // Materials states
   const [materials, setMaterials] = useState([]);
-  const [materialSearch, setMaterialSearch] = useState("");
+  const [selectedWork, setSelectedWork] = useState('');
   const [selectedMaterial, setSelectedMaterial] = useState(null);
-  const [materialQty, setMaterialQty] = useState("");
-  const [manualActivityInput, setManualActivityInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [selectedWork, setSelectedWork] = useState(null);
-  const [showWorkDropdown, setShowWorkDropdown] = useState(false);
+  const [materialQuantity, setMaterialQuantity] = useState('');
+  const [showMaterialDropdown, setShowMaterialDropdown] = useState(false);
+  const [materialSearchTerm, setMaterialSearchTerm] = useState('');
+  const [customerMaterials, setCustomerMaterials] = useState([]);
   const [savingMaterial, setSavingMaterial] = useState(false);
-
-  // Edit customer details
-  const [editMode, setEditMode] = useState(false);
-  const [editForm, setEditForm] = useState(null);
-  const [savingEdit, setSavingEdit] = useState(false);
-
-  // Payment tab states
-  const [selectedPaymentWork, setSelectedPaymentWork] = useState(null);
-  const [showPaymentWorkDropdown, setShowPaymentWorkDropdown] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentList, setPaymentList] = useState([]);
-  const [paymentMode, setPaymentMode] = useState("");
-  const [showPaymentModeDropdown, setShowPaymentModeDropdown] = useState(false);
-  const [paymentComment, setPaymentComment] = useState("");
+  
+  // Payment states
+  const [payments, setPayments] = useState([]);
+  const [paymentForm, setPaymentForm] = useState({
+    workId: '',
+    workPrice: '',
+    amountPaid: '',
+    paymentDate: new Date().toISOString().split('T')[0],
+    paymentMode: 'Cash',
+    notes: ''
+  });
   const [savingPayment, setSavingPayment] = useState(false);
-  const [openPaymentModeDropdown, setOpenPaymentModeDropdown] = useState(null); // replaces showPaymentModeDropdownIdx
-  const [paymentComments, setPaymentComments] = useState({}); // store comment per payment row
+  
+  // Expenses states
+  const [expenses, setExpenses] = useState([]);
+  const [expenseForm, setExpenseForm] = useState({
+    workId: '',
+    expenseType: '',
+    amount: '',
+    expenseDate: new Date().toISOString().split('T')[0],
+    description: ''
+  });
+  const [savingExpense, setSavingExpense] = useState(false);
+  
+  // Activity states
+  const [activities, setActivities] = useState([]);
+  const [manualActivityForm, setManualActivityForm] = useState({
+    title: '',
+    description: '',
+    type: 'note'
+  });
+  const [showActivityForm, setShowActivityForm] = useState(false);
+  
+  const serviceCategories = [
+    'Invisible Grills',
+    'Mosquito Mesh',
+    'Cloth Hangers',
+    'Artificial Grass',
+    'Bird Spikes'
+  ];
+  
+  const paymentModes = ['Cash', 'Card', 'UPI', 'Bank Transfer', 'Cheque'];
+  const expenseTypes = ['Labour', 'Transportation', 'Tools', 'Miscellaneous', 'Other'];
 
-  // Fetch customer details
   useEffect(() => {
-    const fetchCustomer = async () => {
-      try {
-        const docRef = doc(db, "Customers", customerid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setCustomer(docSnap.data());
-        } else {
-          toast.error("No such customer!");
-        }
-      } catch (err) {
-        toast.error("Error fetching customer!");
-      }
-    };
-    fetchCustomer();
-  }, [customerid]);
-
-  // Fetch materials for dropdown
-  useEffect(() => {
-    const fetchMaterials = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "Materials"));
-        const materialsList = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setMaterials(materialsList);
-      } catch (error) {
-        toast.error("Error fetching materials!");
-      }
-    };
+    fetchCustomerData();
     fetchMaterials();
-  }, []);
+  }, [customerId]);
 
-  useEffect(() => {
-    if (customer) setEditForm(customer);
-  }, [customer]);
-
-  useEffect(() => {
-    if (customer && customer.payments) {
-      setPaymentList(customer.payments);
-    }
-  }, [customer]);
-
-  // Function to generate unique project ID
-  const generateProjectId = async () => {
-    const currentYear = new Date().getFullYear();
-    const prefix = `sla_pr_${currentYear}_`;
-    
-    try {
-      // Get the latest project to determine the next number
-      const projectsQuery = query(
-        collection(db, "Projects"),
-        orderBy("createdAt", "desc"),
-        limit(1)
-      );
-      const querySnapshot = await getDocs(projectsQuery);
-      
-      let nextNumber = 1;
-      if (!querySnapshot.empty) {
-        const latestProject = querySnapshot.docs[0].data();
-        if (latestProject.projectId && latestProject.projectId.startsWith(prefix)) {
-          const lastNumber = parseInt(latestProject.projectId.split('_').pop());
-          nextNumber = lastNumber + 1;
-        }
-      }
-      
-      return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
-    } catch (error) {
-      console.error("Error generating project ID:", error);
-      // Fallback to timestamp-based ID
-      return `${prefix}${Date.now()}`;
-    }
-  };
-
-  // Enhanced Add work function with project creation
-  const handleAddWork = async () => {
-    if (!selectedService) {
-      toast.error("Please select a service");
-      return;
-    }
-    if (!workDescription.trim()) {
-      toast.error("Please enter work description");
-      return;
-    }
-    
+  const fetchCustomerData = async () => {
     setLoading(true);
     try {
-      const docRef = doc(db, "Customers", customerid);
-      const currentDate = new Date().toLocaleDateString();
-      const currentTime = new Date().toLocaleTimeString();
-      const username = userDetails?.name || "Unknown User";
+      const customerRef = doc(db, 'Customers', customerId);
+      const customerSnap = await getDoc(customerRef);
       
-      // Generate unique project ID
-      const projectId = await generateProjectId();
-      
-      const newWorkItem = {
-        service: selectedService,
-        description: workDescription.trim(),
-        addedBy: username,
-        date: currentDate,
-        time: currentTime,
-        projectId: projectId // Add project ID to work item
-      };
-      
-      const newWork = [...(customer.work || []), newWorkItem];
-      
-      const newActivity = [
-        ...(customer.activity || []),
-        {
-          type: "work",
-          name: `${selectedService}: ${workDescription.trim()}`,
-          service: selectedService,
-          description: workDescription.trim(),
-          projectId: projectId,
-          date: currentDate,
-          time: currentTime,
-          addedBy: username,
-        },
-      ];
-      
-      // Update customer with new work
-      await updateDoc(docRef, { 
-        work: newWork,
-        activity: newActivity
-      });
-      
-      // Create new project
-      const projectData = {
-        projectId: projectId,
-        customerId: customerid,
-        customerName: customer.name || 'Unknown Customer',
-        customerMobile: customer.mobile || '',
-        customerEmail: customer.email || '',
-        customerAddress: customer.address || '',
-        customerCity: customer.city || '',
-        customerState: customer.state || '',
-        service: selectedService,
-        workDescription: workDescription.trim(),
-        status: 'Active',
-        createdBy: username,
-        createdAt: new Date(),
-        createdDate: currentDate,
-        createdTime: currentTime,
-        updatedAt: new Date()
-      };
-      
-      await addDoc(collection(db, "Projects"), projectData);
-      
-      setCustomer((prev) => ({
-        ...prev,
-        work: newWork,
-        activity: newActivity,
-      }));
-      
-      // Reset form
-      setSelectedService("");
-      setWorkDescription("");
-      setShowServiceDropdown(false);
-      
-      toast.success(`Work added and Project ${projectId} created successfully!`);
-    } catch (err) {
-      console.error("Error adding work and creating project:", err);
-      toast.error("Failed to add work and create project!");
+      if (customerSnap.exists()) {
+        const data = customerSnap.data();
+        setCustomer(data);
+        setProfileForm({
+          name: data.name || '',
+          mobile: data.mobile || '',
+          email: data.email || '',
+          address: data.address || '',
+          city: data.city || '',
+          state: data.state || '',
+          country: data.country || 'India'
+        });
+        setWorks(data.works || []);
+        setCustomerMaterials(data.materials || []);
+        setPayments(data.payments || []);
+        setExpenses(data.expenses || []);
+        setActivities(data.activities || []);
+      } else {
+        toast.error('Customer not found!');
+        navigate('/customers');
+      }
+    } catch (error) {
+      console.error('Error fetching customer:', error);
+      toast.error('Failed to load customer data');
     }
     setLoading(false);
   };
 
-  // Edit customer details handlers
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSaveEdit = async () => {
-    setSavingEdit(true);
+  const fetchMaterials = async () => {
     try {
-      await updateDoc(doc(db, "Customers", customerid), { ...editForm });
-      setCustomer(editForm);
-      setEditMode(false);
-      toast.success("Customer details updated!");
-    } catch (err) {
-      toast.error("Failed to update details!");
+      const querySnapshot = await getDocs(collection(db, 'Materials'));
+      const materialsList = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      materialsList.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      setMaterials(materialsList);
+    } catch (error) {
+      console.error('Error fetching materials:', error);
     }
-    setSavingEdit(false);
   };
 
-  // Add material used (with work)
-  const handleAddMaterialUsed = async () => {
-    if (!selectedMaterial) {
-      toast.error("Please select a material");
-      return;
+  // Profile handlers
+  const handleProfileSave = async () => {
+    try {
+      const customerRef = doc(db, 'Customers', customerId);
+      await updateDoc(customerRef, {
+        ...profileForm,
+        updatedAt: new Date().toISOString()
+      });
+      
+      await addActivity('profile', 'Profile Updated', `Customer profile information was updated`);
+      
+      setCustomer(prev => ({ ...prev, ...profileForm }));
+      setEditProfile(false);
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
     }
-    if (!materialQty || isNaN(materialQty) || materialQty <= 0) {
-      toast.error("Please enter a valid quantity");
-      return;
-    }
-    if (!selectedWork) {
-      toast.error("Please select work for this material");
-      return;
-    }
-    
-    // Enhanced quantity validation
-    const enteredQty = Number(materialQty);
-    const availableStock = selectedMaterial.remaining || selectedMaterial.quantity || 0;
-    
-    console.log("Material validation:", {
-      material: selectedMaterial.name,
-      enteredQty,
-      availableStock,
-      selectedMaterial
-    });
-    
-    if (enteredQty > availableStock) {
-      toast.error(
-        `Entered quantity (${enteredQty}) is more than available stock (${availableStock}). Please reduce the quantity.`,
-        { autoClose: 5000 }
-      );
+  };
+
+  // Work handlers
+  const handleSaveWork = async () => {
+    if (!workForm.workTitle || !workForm.category) {
+      toast.error('Please fill all work fields');
       return;
     }
     
-    if (availableStock <= 0) {
-      toast.error(`${selectedMaterial.name} is out of stock!`);
+    setSavingWork(true);
+    try {
+      const newWork = {
+        id: Date.now().toString(),
+        title: workForm.workTitle,
+        category: workForm.category,
+        createdAt: new Date().toISOString(),
+        status: 'ongoing'
+      };
+      
+      const updatedWorks = [...works, newWork];
+      
+      const customerRef = doc(db, 'Customers', customerId);
+      await updateDoc(customerRef, {
+        works: updatedWorks,
+        updatedAt: new Date().toISOString()
+      });
+      
+      await addActivity('work', 'Work Added', `New work added: ${newWork.title} (${newWork.category})`);
+      
+      setWorks(updatedWorks);
+      setWorkForm({ workTitle: '', category: '' });
+      toast.success('Work added successfully!');
+    } catch (error) {
+      console.error('Error adding work:', error);
+      toast.error('Failed to add work');
+    }
+    setSavingWork(false);
+  };
+
+  // Material handlers
+  const getFilteredMaterials = () => {
+    return materials.filter(material =>
+      material.name?.toLowerCase().includes(materialSearchTerm.toLowerCase())
+    );
+  };
+
+  const handleMaterialSelect = (material) => {
+    setSelectedMaterial(material);
+    setShowMaterialDropdown(false);
+    setMaterialSearchTerm('');
+  };
+
+  const handleSaveMaterial = async () => {
+    if (!selectedWork || !selectedMaterial || !materialQuantity) {
+      toast.error('Please fill all material fields');
+      return;
+    }
+    
+    const qty = parseFloat(materialQuantity);
+    if (isNaN(qty) || qty <= 0) {
+      toast.error('Please enter valid quantity');
       return;
     }
     
     setSavingMaterial(true);
     try {
-      const currentDate = new Date().toLocaleDateString();
-      const currentTime = new Date().toLocaleTimeString();
-      const username = userDetails?.name || "Unknown User";
+      const work = works.find(w => w.id === selectedWork);
+      const totalCost = (selectedMaterial.price || 0) * qty;
       
-      // Update material quantity in Materials collection
-      const materialDocRef = doc(db, "Materials", selectedMaterial.id);
-      const newQty = availableStock - enteredQty;
+      const newMaterial = {
+        id: Date.now().toString(),
+        workId: selectedWork,
+        workTitle: work?.title || '',
+        materialId: selectedMaterial.id,
+        materialName: selectedMaterial.name,
+        category: selectedMaterial.category,
+        quantity: qty,
+        unitPrice: selectedMaterial.price || 0,
+        totalCost: totalCost,
+        addedAt: new Date().toISOString()
+      };
       
-      // Update both quantity and remaining fields
-      await updateDoc(materialDocRef, { 
-        quantity: newQty,
-        remaining: newQty,
-        lastUpdated: new Date(),
-        lastUsedBy: username,
-        lastUsedDate: currentDate
+      const updatedMaterials = [...customerMaterials, newMaterial];
+      
+      const customerRef = doc(db, 'Customers', customerId);
+      await updateDoc(customerRef, {
+        materials: updatedMaterials,
+        updatedAt: new Date().toISOString()
       });
-
-      // Update customer materialUsed array
-      const docRef = doc(db, "Customers", customerid);
-      const newMaterialUsed = [
-        ...(customer.materialUsed || []),
-        {
-          materialId: selectedMaterial.id,
-          name: selectedMaterial.name,
-          quantity: enteredQty,
-          work: selectedWork,
-          pricePerUnit: selectedMaterial.price || 0,
-          totalCost: (selectedMaterial.price || 0) * enteredQty,
-          addedBy: username,
-          date: currentDate,
-          time: currentTime,
-          stockBefore: availableStock,
-          stockAfter: newQty
-        },
-      ];
-
-      // Add activity
-      const newActivity = [
-        ...(customer.activity || []),
-        {
-          type: "material",
-          name: `Used ${enteredQty} ${selectedMaterial.name}`,
-          quantity: enteredQty,
-          work: selectedWork,
-          materialName: selectedMaterial.name,
-          stockBefore: availableStock,
-          stockAfter: newQty,
-          date: currentDate,
-          time: currentTime,
-          addedBy: username,
-        },
-      ];
-
-      await updateDoc(docRef, { 
-        materialUsed: newMaterialUsed,
-        activity: newActivity
-      });
-
-      setCustomer((prev) => ({
-        ...prev,
-        materialUsed: newMaterialUsed,
-        activity: newActivity,
-      }));
-
-      // Update local materials state to reflect the reduced quantity
-      setMaterials((prev) =>
-        prev.map((mat) =>
-          mat.id === selectedMaterial.id
-            ? { 
-                ...mat, 
-                quantity: newQty, 
-                remaining: newQty,
-                lastUpdated: new Date(),
-                lastUsedBy: username 
-              }
-            : mat
-        )
-      );
       
-      // Reset form
+      await addActivity('material', 'Material Added', `Added ${qty} units of ${selectedMaterial.name} for ${work?.title}`);
+      
+      setCustomerMaterials(updatedMaterials);
+      setSelectedWork('');
       setSelectedMaterial(null);
-      setMaterialQty("");
-      setSelectedWork(null);
-      setMaterialDropdownOpen(false);
-      setShowWorkDropdown(false);
-      
-      toast.success(
-        `Material added successfully! ${selectedMaterial.name} stock reduced from ${availableStock} to ${newQty}`,
-        { autoClose: 4000 }
-      );
-      
-    } catch (err) {
-      console.error("Error adding material:", err);
-      toast.error("Failed to add material!");
+      setMaterialQuantity('');
+      toast.success('Material added successfully!');
+    } catch (error) {
+      console.error('Error adding material:', error);
+      toast.error('Failed to add material');
     }
     setSavingMaterial(false);
   };
 
-  const handleAddManualActivity = async () => {
-    if (!manualActivityInput.trim()) return;
-    setLoading(true);
-    try {
-      const docRef = doc(db, "Customers", customerid);
-      const currentDate = new Date().toLocaleDateString();
-      const currentTime = new Date().toLocaleTimeString();
-      const username = userDetails?.name || "Unknown User";
-      
-      const newActivity = [
-        ...(customer.activity || []),
-        {
-          type: "manual",
-          name: manualActivityInput.trim(),
-          date: currentDate,
-          time: currentTime,
-          addedBy: username,
-        },
-      ];
-      
-      await updateDoc(docRef, { activity: newActivity });
-      setCustomer((prev) => ({
-        ...prev,
-        activity: newActivity,
-      }));
-      setManualActivityInput("");
-      toast.success("Activity added!");
-    } catch (err) {
-      toast.error("Failed to add activity!");
-    }
-    setLoading(false);
-  };
-
-  // Payment save handler
+  // Payment handlers
   const handleSavePayment = async () => {
-    if (!selectedPaymentWork) {
-      toast.error("Select work for payment");
+    if (!paymentForm.workId || !paymentForm.workPrice || !paymentForm.amountPaid) {
+      toast.error('Please fill all payment fields');
       return;
     }
-    if (!paymentAmount || isNaN(paymentAmount) || paymentAmount <= 0) {
-      toast.error("Enter valid total amount");
-      return;
-    }
+    
     setSavingPayment(true);
     try {
-      const currentDate = new Date().toLocaleDateString();
-      const currentTime = new Date().toLocaleTimeString();
-      const username = userDetails?.name || "Unknown User";
+      const work = works.find(w => w.id === paymentForm.workId);
+      const newPayment = {
+        id: Date.now().toString(),
+        workId: paymentForm.workId,
+        workTitle: work?.title || '',
+        totalPrice: parseFloat(paymentForm.workPrice),
+        amountPaid: parseFloat(paymentForm.amountPaid),
+        balance: parseFloat(paymentForm.workPrice) - parseFloat(paymentForm.amountPaid),
+        paymentDate: paymentForm.paymentDate,
+        paymentMode: paymentForm.paymentMode,
+        notes: paymentForm.notes,
+        createdAt: new Date().toISOString()
+      };
       
-      // Save payment info for work
-      const newPayments = [
-        ...(customer.payments || []),
-        {
-          work: selectedPaymentWork,
-          totalAmount: Number(paymentAmount),
-          paid: [],
-          addedBy: username,
-          date: currentDate,
-          time: currentTime,
-        },
-      ];
-
-      // Add activity
-      const newActivity = [
-        ...(customer.activity || []),
-        {
-          type: "payment_setup",
-          name: `Payment setup for ${selectedPaymentWork}`,
-          amount: Number(paymentAmount),
-          work: selectedPaymentWork,
-          date: currentDate,
-          time: currentTime,
-          addedBy: username,
-        },
-      ];
-
-      await updateDoc(doc(db, "Customers", customerid), { 
-        payments: newPayments,
-        activity: newActivity
+      const updatedPayments = [...payments, newPayment];
+      
+      const customerRef = doc(db, 'Customers', customerId);
+      await updateDoc(customerRef, {
+        payments: updatedPayments,
+        updatedAt: new Date().toISOString()
       });
-
-      setCustomer((prev) => ({ 
-        ...prev, 
-        payments: newPayments,
-        activity: newActivity
-      }));
       
-      setPaymentList(newPayments);
-      setSelectedPaymentWork(null);
-      setPaymentAmount("");
-      toast.success("Payment info saved!");
-    } catch (err) {
-      toast.error("Failed to save payment info!");
+      await addActivity('payment', 'Payment Recorded', `Payment of ₹${newPayment.amountPaid} received for ${work?.title}`);
+      
+      setPayments(updatedPayments);
+      setPaymentForm({
+        workId: '',
+        workPrice: '',
+        amountPaid: '',
+        paymentDate: new Date().toISOString().split('T')[0],
+        paymentMode: 'Cash',
+        notes: ''
+      });
+      toast.success('Payment recorded successfully!');
+    } catch (error) {
+      console.error('Error recording payment:', error);
+      toast.error('Failed to record payment');
     }
     setSavingPayment(false);
   };
 
-  // Add payment for work (fix index for reversed list)
-  const handleAddPayment = async (displayIdx) => {
-    // Find the correct index in the original paymentList
-    const workIndex = paymentList.length - 1 - displayIdx;
-    if (!paymentMode) {
-      toast.error("Select payment mode");
+  // Expense handlers
+  const handleSaveExpense = async () => {
+    if (!expenseForm.workId || !expenseForm.expenseType || !expenseForm.amount) {
+      toast.error('Please fill all expense fields');
       return;
     }
-    if (!paymentComments[displayIdx] || !paymentComments[displayIdx].trim()) {
-      toast.error("Enter comment");
-      return;
-    }
-    const paidAmount = prompt("Enter paid amount:");
-    if (!paidAmount || isNaN(paidAmount) || paidAmount <= 0) {
-      toast.error("Enter valid paid amount");
-      return;
-    }
-    setSavingPayment(true);
+    
+    setSavingExpense(true);
     try {
-      const currentDate = new Date().toLocaleDateString();
-      const currentTime = new Date().toLocaleTimeString();
-      const username = userDetails?.name || "Unknown User";
+      const work = works.find(w => w.id === expenseForm.workId);
+      const newExpense = {
+        id: Date.now().toString(),
+        workId: expenseForm.workId,
+        workTitle: work?.title || '',
+        expenseType: expenseForm.expenseType,
+        amount: parseFloat(expenseForm.amount),
+        expenseDate: expenseForm.expenseDate,
+        description: expenseForm.description,
+        createdAt: new Date().toISOString()
+      };
       
-      const paymentsCopy = [...paymentList];
-      const newPaymentRecord = {
-        amount: Number(paidAmount),
-        mode: paymentMode,
-        comment: paymentComments[displayIdx],
-        date: currentDate,
-        time: currentTime,
-        addedBy: username,
-      };
-      paymentsCopy[workIndex].paid.push(newPaymentRecord);
-
-      // Add activity
-      const newActivity = [
-        ...(customer.activity || []),
-        {
-          type: "payment",
-          name: `Payment received for ${paymentsCopy[workIndex].work}`,
-          amount: Number(paidAmount),
-          mode: paymentMode,
-          comment: paymentComments[displayIdx],
-          work: paymentsCopy[workIndex].work,
-          date: currentDate,
-          time: currentTime,
-          addedBy: username,
-        },
-      ];
-
-      // Store payment record in Payments collection
-      const paymentDocData = {
-        customerId: customerid,
-        customerName: customer.name,
-        customerEmail: customer.email || '',
-        customerMobile: customer.mobile || '',
-        work: paymentsCopy[workIndex].work,
-        totalWorkAmount: paymentsCopy[workIndex].totalAmount,
-        paidAmount: Number(paidAmount),
-        paymentMode: paymentMode,
-        comment: paymentComments[displayIdx],
-        receivedBy: username,
-        paymentDate: new Date(),
-        createdAt: new Date(),
-        createdDate: currentDate,
-        createdTime: currentTime,
-        status: 'received'
-      };
-
-      // Add to Payments collection
-      await addDoc(collection(db, "Payments"), paymentDocData);
-
-      await updateDoc(doc(db, "Customers", customerid), { 
-        payments: paymentsCopy,
-        activity: newActivity
+      const updatedExpenses = [...expenses, newExpense];
+      
+      const customerRef = doc(db, 'Customers', customerId);
+      await updateDoc(customerRef, {
+        expenses: updatedExpenses,
+        updatedAt: new Date().toISOString()
       });
-
-      setCustomer((prev) => ({ 
-        ...prev, 
-        payments: paymentsCopy,
-        activity: newActivity
-      }));
       
-      setPaymentList(paymentsCopy);
-      setPaymentMode("");
-      setPaymentComments((prev) => ({ ...prev, [displayIdx]: "" }));
-      setOpenPaymentModeDropdown(null);
-      toast.success("Payment added!");
-    } catch (err) {
-      toast.error("Failed to add payment!");
+      await addActivity('expense', 'Expense Added', `${expenseForm.expenseType} expense of ₹${expenseForm.amount} for ${work?.title}`);
+      
+      setExpenses(updatedExpenses);
+      setExpenseForm({
+        workId: '',
+        expenseType: '',
+        amount: '',
+        expenseDate: new Date().toISOString().split('T')[0],
+        description: ''
+      });
+      toast.success('Expense added successfully!');
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      toast.error('Failed to add expense');
     }
-    setSavingPayment(false);
+    setSavingExpense(false);
   };
 
-  if (!customer) return <p>Loading...</p>;
+  // Activity handler
+  const addActivity = async (type, title, description) => {
+    try {
+      const newActivity = {
+        id: Date.now().toString(),
+        type,
+        title,
+        description,
+        timestamp: new Date().toISOString()
+      };
+      
+      const customerRef = doc(db, 'Customers', customerId);
+      await updateDoc(customerRef, {
+        activities: arrayUnion(newActivity)
+      });
+      
+      setActivities(prev => [newActivity, ...prev]);
+    } catch (error) {
+      console.error('Error adding activity:', error);
+    }
+  };
 
-  // Filter materials for dropdown
-  const filteredMaterials = materials.filter((mat) =>
-    mat.name.toLowerCase().includes(materialSearch.toLowerCase())
-  );
+  const handleAddManualActivity = async () => {
+    if (!manualActivityForm.title) {
+      toast.error('Please enter activity title');
+      return;
+    }
+    
+    try {
+      await addActivity(manualActivityForm.type, manualActivityForm.title, manualActivityForm.description);
+      setManualActivityForm({ title: '', description: '', type: 'note' });
+      setShowActivityForm(false);
+      toast.success('Activity added successfully!');
+    } catch (error) {
+      console.error('Error adding manual activity:', error);
+      toast.error('Failed to add activity');
+    }
+  };
+
+  // Analytics calculations
+  const getWorkAnalytics = (workId) => {
+    const workMaterials = customerMaterials.filter(m => m.workId === workId);
+    const workPayments = payments.filter(p => p.workId === workId);
+    const workExpenses = expenses.filter(e => e.workId === workId);
+    
+    const materialsCost = workMaterials.reduce((sum, m) => sum + (m.totalCost || 0), 0);
+    const totalExpenses = workExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const totalCost = materialsCost + totalExpenses;
+    
+    const totalRevenue = workPayments.reduce((sum, p) => sum + (p.totalPrice || 0), 0);
+    const totalReceived = workPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+    const balance = totalRevenue - totalReceived;
+    
+    const profit = totalRevenue - totalCost;
+    const profitPercentage = totalRevenue > 0 ? ((profit / totalRevenue) * 100).toFixed(2) : 0;
+    
+    return {
+      materialsCost,
+      totalExpenses,
+      totalCost,
+      totalRevenue,
+      totalReceived,
+      balance,
+      profit,
+      profitPercentage,
+      materialsCount: workMaterials.length,
+      expensesCount: workExpenses.length
+    };
+  };
+
+  const getOverallAnalytics = () => {
+    const totalMaterialsCost = customerMaterials.reduce((sum, m) => sum + (m.totalCost || 0), 0);
+    const totalExpensesAmount = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const totalCost = totalMaterialsCost + totalExpensesAmount;
+    
+    const totalRevenue = payments.reduce((sum, p) => sum + (p.totalPrice || 0), 0);
+    const totalReceived = payments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+    const totalBalance = totalRevenue - totalReceived;
+    
+    const totalProfit = totalRevenue - totalCost;
+    const profitPercentage = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(2) : 0;
+    
+    return {
+      totalMaterialsCost,
+      totalExpensesAmount,
+      totalCost,
+      totalRevenue,
+      totalReceived,
+      totalBalance,
+      totalProfit,
+      profitPercentage
+    };
+  };
+
+  if (loading) {
+    return (
+      <>
+        <div className="top-bar-container">
+          <Hamburger />
+          <div className="breadcrumps-container">
+            <h1>Customer Details</h1>
+          </div>
+        </div>
+        <div className="customer-details-loading">
+          <div className="customer-details-loading-spinner"></div>
+          <p>Loading customer details...</p>
+        </div>
+      </>
+    );
+  }
+
+  if (!customer) {
+    return (
+      <>
+        <div className="top-bar-container">
+          <Hamburger />
+          <div className="breadcrumps-container">
+            <h1>Customer Details</h1>
+          </div>
+        </div>
+        <div className="customer-details-error">
+          <AlertCircle size={48} />
+          <h3>Customer Not Found</h3>
+          <button onClick={() => navigate('/customers')} className="customer-details-back-btn">
+            Back to Customers
+          </button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -591,725 +536,937 @@ const CustomerDetails = () => {
         <div className="breadcrumps-container">
           <h1>{customer.name}</h1>
         </div>
-        <div className="actions-container">
-          <button className="saveDetails-btn">
-            <Plus /> Add Customer
-          </button>
-        </div>
       </div>
 
-      <div className="customer-details-main-container">
-        <div className="customer-main-details">
-          <div className="customer-avatar">
-            {customer.name ? customer.name.charAt(0).toUpperCase() : <User className="icon" />}
-          </div>
-          {editMode ? (
-            <>
-              <input className="edit-input" name="name" value={editForm.name} onChange={handleEditChange} />
-              <input className="edit-input" name="email" value={editForm.email} onChange={handleEditChange} />
-              <input className="edit-input" name="mobile" value={editForm.mobile} onChange={handleEditChange} />
-              <input className="edit-input" name="address" value={editForm.address} onChange={handleEditChange} />
-              <input className="edit-input" name="city" value={editForm.city} onChange={handleEditChange} />
-              <input className="edit-input" name="state" value={editForm.state} onChange={handleEditChange} />
-              <input className="edit-input" name="country" value={editForm.country} onChange={handleEditChange} />
-              <button className="edit-btn" onClick={handleSaveEdit} disabled={savingEdit}>
-                {savingEdit ? <span className="loader-white"></span> : null}
-                Save
-              </button>
-              <button className="delete-btn" onClick={() => setEditMode(false)}>Cancel</button>
-            </>
-          ) : (
-            <>
-              <p className="name">{customer.name}</p>
-              <p className="email">{customer.email}</p>
-              {/* <div className="qualification-con">
-                <div className="qualification-item">
-                  <p className="left">Mobile :</p>
-                  <p className="right">{customer.mobile}</p>
-                </div>
-                <div className="qualification-item">
-                  <p className="left">Address :</p>
-                  <p className="right">{customer.address}</p>
-                </div>
-                <div className="qualification-item">
-                  <p className="left">City :</p>
-                  <p className="right">{customer.city}</p>
-                </div>
-                <div className="qualification-item">
-                  <p className="left">State :</p>
-                  <p className="right">{customer.state}</p>
-                </div>
-                <div className="qualification-item">
-                  <p className="left">Country :</p>
-                  <p className="right">{customer.country}</p>
-                </div>
-                <div className="qualification-item">
-                  <p className="left">Looking For :</p>
-                  <p className="right">{(customer.lookingFor || []).join(", ")}</p>
-                </div>
-              </div> */}
-              <div className="edit-delete-btn-con">
-                <button className="edit-btn" onClick={() => setEditMode(true)}>
-                  <SquarePen className="icon" /> Edit
-                </button>
+      <div className="customer-details-container">
+        {/* Header Card */}
+        <div className="customer-details-header">
+          <div className="customer-header-left">
+            <div className="customer-avatar">
+              {customer.name?.charAt(0).toUpperCase()}
+            </div>
+            <div className="customer-header-info">
+              <h2>{customer.name}</h2>
+              <div className="customer-quick-info">
+                {customer.mobile && (
+                  <span><Phone size={14} /> {customer.mobile}</span>
+                )}
+                {customer.email && (
+                  <span><Mail size={14} /> {customer.email}</span>
+                )}
+                {customer.city && (
+                  <span><MapPin size={14} /> {customer.city}</span>
+                )}
               </div>
-            </>
-          )}
+            </div>
+          </div>
+          <div className="customer-header-stats">
+            <div className="customer-stat-card">
+              <Briefcase size={20} />
+              <div>
+                <p>{works.length}</p>
+                <span>Works</span>
+              </div>
+            </div>
+            <div className="customer-stat-card">
+              <Package size={20} />
+              <div>
+                <p>{customerMaterials.length}</p>
+                <span>Materials</span>
+              </div>
+            </div>
+            <div className="customer-stat-card">
+              <IndianRupee size={20} />
+              <div>
+                <p>₹{getOverallAnalytics().totalReceived.toLocaleString()}</p>
+                <span>Received</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="customer-additional-details">
-          <div className="actions-tab-container">
-            <button className={`${stage === 'profile' ? 'active' : ''}`} onClick={() => setStage('profile')}>Profile</button>
-            <button className={`${stage === 'work' ? 'active' : ''}`} onClick={() => setStage('work')}>Work</button>
-            <button className={`${stage === 'material' ? 'active' : ''}`} onClick={() => setStage('material')}>Materials</button>
-            <button className={`${stage === 'payment' ? 'active' : ''}`} onClick={() => setStage('payment')}>Payment</button>
-            <button className={`${stage === 'activity' ? 'active' : ''}`} onClick={() => setStage('activity')}>Activity</button>
-          </div>
+        {/* Tabs Navigation */}
+        <div className="customer-tabs-navigation">
+          <button
+            className={`customer-tab-button ${activeTab === 'profile' ? 'customer-tab-active' : ''}`}
+            onClick={() => setActiveTab('profile')}
+          >
+            <User size={18} />
+            Profile
+          </button>
+          <button
+            className={`customer-tab-button ${activeTab === 'work' ? 'customer-tab-active' : ''}`}
+            onClick={() => setActiveTab('work')}
+          >
+            <Briefcase size={18} />
+            Work
+          </button>
+          <button
+            className={`customer-tab-button ${activeTab === 'materials' ? 'customer-tab-active' : ''}`}
+            onClick={() => setActiveTab('materials')}
+          >
+            <Package size={18} />
+            Materials
+          </button>
+          <button
+            className={`customer-tab-button ${activeTab === 'payment' ? 'customer-tab-active' : ''}`}
+            onClick={() => setActiveTab('payment')}
+          >
+            <IndianRupee size={18} />
+            Payment
+          </button>
+          <button
+            className={`customer-tab-button ${activeTab === 'expenses' ? 'customer-tab-active' : ''}`}
+            onClick={() => setActiveTab('expenses')}
+          >
+            <DollarSign size={18} />
+            Expenses
+          </button>
+          <button
+            className={`customer-tab-button ${activeTab === 'analytics' ? 'customer-tab-active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <TrendingUp size={18} />
+            Analytics
+          </button>
+          <button
+            className={`customer-tab-button ${activeTab === 'activity' ? 'customer-tab-active' : ''}`}
+            onClick={() => setActiveTab('activity')}
+          >
+            <Activity size={18} />
+            Activity
+          </button>
+        </div>
 
-          {/* Profile Details */}
-          <div className={`profile-details-con ${stage === 'profile' ? '' : 'd-none'}`}>
-            <div className="profile-details-item">
-              <p className="left">Name :</p>
-              <p className="right">{customer.name}</p>
-            </div>
-            <div className="profile-details-item">
-              <p className="left">Mobile :</p>
-              <p className="right">{customer.mobile}</p>
-            </div>
-            <div className="profile-details-item">
-              <p className="left">Email :</p>
-              <p className="right">{customer.email}</p>
-            </div>
-            <div className="profile-details-item">
-              <p className="left">Address :</p>
-              <p className="right">{customer.address}</p>
-            </div>
-            <div className="profile-details-item">
-              <p className="left">City :</p>
-              <p className="right">{customer.city}</p>
-            </div>
-            <div className="profile-details-item">
-              <p className="left">State :</p>
-              <p className="right">{customer.state}</p>
-            </div>
-            <div className="profile-details-item">
-              <p className="left">Country :</p>
-              <p className="right">{customer.country}</p>
-            </div>
-            <div className="profile-details-item">
-              <p className="left">Looking For :</p>
-              <p className="right">{(customer.lookingFor || []).join(", ")}</p>
-            </div>
-          </div>
-
-          {/* Work Tab - Simplified */}
-          <div className={`profile-details-con ${stage === 'work' ? '' : 'd-none'}`}>
-            <div className="work-list">
-              <h4>Work Management</h4>
-              <div className="work-add-row">
-                {/* Service Dropdown */}
-                <div className="material-dropdown-container">
+        {/* Tab Content */}
+        <div className="customer-tab-content">
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
+            <div className="customer-profile-section">
+              <div className="customer-section-header">
+                <h3>Customer Information</h3>
+                {!editProfile ? (
                   <button
-                    type="button"
-                    className="material-dropdown-header"
-                    onClick={() => setShowServiceDropdown(!showServiceDropdown)}
+                    className="customer-edit-btn"
+                    onClick={() => setEditProfile(true)}
                   >
-                    <span>
-                      {selectedService || "Select Service"}
-                    </span>
-                    <ChevronDown className="icon" />
+                    <Edit size={16} /> Edit Profile
                   </button>
-                  {showServiceDropdown && (
-                    <div className="material-dropdown-list">
-                      <div className="material-dropdown-scroll">
-                        {servicesList.map((service, idx) => (
-                          <div
-                            key={idx}
-                            className="material-dropdown-item"
-                            onClick={() => {
-                              setSelectedService(service);
-                              setShowServiceDropdown(false);
-                            }}
-                          >
-                            🔧 {service}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Work Description Input */}
-                <input
-                  type="text"
-                  placeholder="Enter work description..."
-                  value={workDescription}
-                  onChange={(e) => setWorkDescription(e.target.value)}
-                  className="work-input"
-                />
-                
-                <button 
-                  className="add-btn" 
-                  onClick={handleAddWork} 
-                  disabled={loading || !selectedService || !workDescription.trim()}
-                >
-                  {loading ? <span className="loader-white"></span> : null}
-                  Add Work
-                </button>
-              </div>
-              
-              {(customer.work || []).length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-state-icon">🔧</div>
-                  <div className="empty-state-title">No Work Items</div>
-                  <div className="empty-state-text">Add work items to track customer projects</div>
-                </div>
-              ) : (
-                // Show latest work items first by reversing the array
-                [...(customer.work || [])].reverse().map((work, idx) => (
-                  <div key={idx} className="work-item">
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'flex-start',
-                      marginBottom: '8px'
-                    }}>
-                      <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--txt-dark)' }}>
-                        {work.service || work.name || 'Service Work'}
-                      </div>
-                      <span style={{
-                        background: '#e0f2fe',
-                        color: '#0369a1',
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        textTransform: 'uppercase'
-                      }}>
-                        {work.service || 'Service'}
-                      </span>
-                    </div>
-                    
-                    {(work.description || work.comment) && (
-                      <div style={{ 
-                        fontSize: '14px', 
-                        color: 'var(--txt-dark)', 
-                        marginBottom: '8px',
-                        background: '#f8fafc',
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        borderLeft: '3px solid var(--blue)'
-                      }}>
-                        💬 {work.description || work.comment}
-                      </div>
-                    )}
-                    
-                    {work.addedBy && (
-                      <div style={{ fontSize: '12px', color: 'var(--txt-light)', marginTop: '8px' }}>
-                        👤 Added by: <strong>{work.addedBy}</strong> | 📅 {work.date} ⏰ {work.time}
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Material Used Tab */}
-          <div className={`profile-details-con ${stage === 'material' ? '' : 'd-none'}`}>
-            <div className="material-used-list">
-              <h4>Materials Management</h4>
-              <div className="material-add-row">
-                {/* Work Dropdown - Updated to use service names */}
-                <div className="material-dropdown-container">
-                  <button
-                    type="button"
-                    className="material-dropdown-header"
-                    onClick={() => setShowWorkDropdown((open) => !open)}
-                  >
-                    <span>
-                      {selectedWork || "Choose Work"}
-                    </span>
-                    <ChevronDown className="icon" />
-                  </button>
-                  {showWorkDropdown && (
-                    <div className="material-dropdown-list">
-                      <div className="material-dropdown-scroll">
-                        {(customer.work || []).length === 0 ? (
-                          <div className="material-dropdown-item">No works found</div>
-                        ) : (
-                          customer.work.map((work, idx) => (
-                            <div
-                              key={idx}
-                              className="material-dropdown-item"
-                              onClick={() => {
-                                setSelectedWork(work.service || work.name || 'Service Work');
-                                setShowWorkDropdown(false);
-                              }}
-                            >
-                              🔧 {work.service || work.name || 'Service Work'}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Material Dropdown */}
-                <div className="material-dropdown-container">
-                  <button
-                    type="button"
-                    className="material-dropdown-header"
-                    onClick={() => setMaterialDropdownOpen((open) => !open)}
-                  >
-                    <span>
-                      {selectedMaterial ? 
-                        `${selectedMaterial.name} (Stock: ${selectedMaterial.remaining || selectedMaterial.quantity || 0})` 
-                        : "Choose Material"
-                      }
-                    </span>
-                    <ChevronDown className="icon" />
-                  </button>
-                  {materialDropdownOpen && (
-                    <div className="material-dropdown-list">
-                      <input
-                        type="text"
-                        className="material-dropdown-search"
-                        placeholder="Search material..."
-                        value={materialSearch}
-                        onChange={(e) => setMaterialSearch(e.target.value)}
-                      />
-                      <div className="material-dropdown-scroll">
-                        {filteredMaterials.length === 0 ? (
-                          <div className="material-dropdown-item">No materials found</div>
-                        ) : (
-                          filteredMaterials.map((mat) => {
-                            const stock = mat.remaining || mat.quantity || 0;
-                            return (
-                              <div
-                                key={mat.id}
-                                className="material-dropdown-item"
-                                onClick={() => {
-                                  setSelectedMaterial(mat);
-                                  setMaterialDropdownOpen(false);
-                                  setMaterialSearch("");
-                                }}
-                                style={{
-                                  background: stock <= 0 ? '#fee2e2' : stock <= 5 ? '#fef3c7' : '',
-                                  color: stock <= 0 ? '#dc2626' : stock <= 5 ? '#d97706' : ''
-                                }}
-                              >
-                                📦 {mat.name} 
-                                <span style={{ 
-                                  fontSize: '12px', 
-                                  marginLeft: '8px',
-                                  fontWeight: '600',
-                                  color: stock <= 0 ? '#dc2626' : stock <= 5 ? '#d97706' : '#22c55e'
-                                }}>
-                                  (Stock: {stock})
-                                  {stock <= 0 && ' - OUT OF STOCK'}
-                                  {stock > 0 && stock <= 5 && ' - LOW STOCK'}
-                                </span>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <input
-                  type="number"
-                  className="material-qty-input"
-                  value={materialQty}
-                  onChange={(e) => setMaterialQty(e.target.value)}
-                  min="1"
-                  max={selectedMaterial ? (selectedMaterial.remaining || selectedMaterial.quantity || 0) : undefined}
-                  placeholder={selectedMaterial ? `Max: ${selectedMaterial.remaining || selectedMaterial.quantity || 0}` : "Quantity"}
-                  disabled={!selectedMaterial}
-                  style={{
-                    borderColor: selectedMaterial && materialQty && Number(materialQty) > (selectedMaterial.remaining || selectedMaterial.quantity || 0) ? '#ef4444' : ''
-                  }}
-                />
-                
-                <button
-                  className="add-btn"
-                  onClick={handleAddMaterialUsed}
-                  disabled={
-                    !selectedMaterial || 
-                    !materialQty || 
-                    !selectedWork || 
-                    savingMaterial ||
-                    (selectedMaterial && Number(materialQty) > (selectedMaterial.remaining || selectedMaterial.quantity || 0))
-                  }
-                >
-                  {savingMaterial ? <span className="loader-white"></span> : null}
-                  Add Material
-                </button>
-              </div>
-              
-              {/* Stock warning for selected material */}
-              {selectedMaterial && (
-                <div style={{
-                  padding: '12px 16px',
-                  borderRadius: '8px',
-                  margin: '8px 0',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: (selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 0 
-                    ? '#fee2e2' 
-                    : (selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 5 
-                    ? '#fef3c7' 
-                    : '#dcfce7',
-                  color: (selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 0 
-                    ? '#dc2626' 
-                    : (selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 5 
-                    ? '#d97706' 
-                    : '#16a34a',
-                }}>
-                  <span>
-                    {(selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 0 
-                      ? '⚠️ OUT OF STOCK' 
-                      : (selectedMaterial.remaining || selectedMaterial.quantity || 0) <= 5 
-                      ? '⚠️ LOW STOCK WARNING' 
-                      : '✅ STOCK AVAILABLE'}
-                  </span>
-                  <span>
-                    Available: {selectedMaterial.remaining || selectedMaterial.quantity || 0} units
-                  </span>
-                </div>
-              )}
-              
-              {(customer.materialUsed || []).length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-state-icon">📦</div>
-                  <div className="empty-state-title">No Materials Used</div>
-                  <div className="empty-state-text">Track materials used for customer projects</div>
-                </div>
-              ) : (
-                // Show latest material usage first by reversing the array
-                [...(customer.materialUsed || [])].reverse().map((mat, idx) => (
-                  <div key={idx} className="material-used-item">
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'flex-start',
-                      marginBottom: '8px'
-                    }}>
-                      <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--txt-dark)' }}>
-                        📦 {mat.name} - Qty: {mat.quantity}
-                      </div>
-                      {mat.work && (
-                        <span style={{
-                          background: '#e0f2fe',
-                          color: '#0369a1',
-                          padding: '4px 8px',
-                          borderRadius: '12px',
-                          fontSize: '11px',
-                          fontWeight: '600'
-                        }}>
-                          🔧 {mat.work}
-                        </span>
-                      )}
-                    </div>
-                    
-                    {mat.stockBefore && mat.stockAfter !== undefined && (
-                      <div style={{ 
-                        fontSize: '12px', 
-                        color: 'var(--txt-light)', 
-                        marginBottom: '8px',
-                        background: '#f1f5f9',
-                        padding: '6px 10px',
-                        borderRadius: '6px'
-                      }}>
-                        📊 Stock: {mat.stockBefore} → {mat.stockAfter} 
-                        {mat.totalCost && <span> | 💰 Cost: ₹{mat.totalCost}</span>}
-                      </div>
-                    )}
-                    
-                    {mat.addedBy && (
-                      <div style={{ fontSize: '12px', color: 'var(--txt-light)', marginTop: '8px' }}>
-                        👤 Added by: <strong>{mat.addedBy}</strong> | 📅 {mat.date} ⏰ {mat.time}
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Payment Tab */}
-          <div className={`profile-details-con ${stage === 'payment' ? '' : 'd-none'}`}>
-            <h4>Payment Management</h4>
-            
-            {/* Payment Summary Cards */}
-            {paymentList.length > 0 && (
-              <div className="payment-summary-grid">
-                <div className="payment-summary-card">
-                  <h5>Total Works</h5>
-                  <div className="amount">{paymentList.length}</div>
-                  <div className="status-text">Active Payment Plans</div>
-                </div>
-                <div className="payment-summary-card">
-                  <h5>Total Amount</h5>
-                  <div className="amount">₹{paymentList.reduce((sum, pay) => sum + pay.totalAmount, 0).toLocaleString()}</div>
-                  <div className="status-text">Across All Works</div>
-                </div>
-                <div className="payment-summary-card">
-                  <h5>Total Received</h5>
-                  <div className="amount">₹{paymentList.reduce((sum, pay) => sum + pay.paid.reduce((paidSum, p) => paidSum + p.amount, 0), 0).toLocaleString()}</div>
-                  <div className="status-text">Payment Collected</div>
-                </div>
-                <div className="payment-summary-card">
-                  <h5>Pending Amount</h5>
-                  <div className="amount">₹{paymentList.reduce((sum, pay) => sum + (pay.totalAmount - pay.paid.reduce((paidSum, p) => paidSum + p.amount, 0)), 0).toLocaleString()}</div>
-                  <div className="status-text">Yet to Collect</div>
-                </div>
-              </div>
-            )}
-
-            {/* Add payment info for work - Updated dropdown */}
-            <div className="payment-add-row">
-              <div className="material-dropdown-container">
-                <button
-                  type="button"
-                  className="material-dropdown-header"
-                  onClick={() => setShowPaymentWorkDropdown((open) => !open)}
-                >
-                  <span>
-                    {selectedPaymentWork ? selectedPaymentWork : "Choose Work"}
-                  </span>
-                  <ChevronDown className="icon" />
-                </button>
-                {showPaymentWorkDropdown && (
-                  <div className="material-dropdown-list">
-                    <div className="material-dropdown-scroll">
-                      {(customer.work || []).length === 0 ? (
-                        <div className="material-dropdown-item">No works found</div>
-                      ) : (
-                        customer.work.map((work, idx) => (
-                          <div
-                            key={idx}
-                            className="material-dropdown-item"
-                            onClick={() => {
-                              setSelectedPaymentWork(work.service || work.name || 'Service Work');
-                              setShowPaymentWorkDropdown(false);
-                            }}
-                          >
-                            {work.service || work.name || 'Service Work'}
-                          </div>
-                        ))
-                      )}
-                    </div>
+                ) : (
+                  <div className="customer-action-buttons">
+                    <button
+                      className="customer-save-btn"
+                      onClick={handleProfileSave}
+                    >
+                      <Save size={16} /> Save
+                    </button>
+                    <button
+                      className="customer-cancel-btn"
+                      onClick={() => {
+                        setEditProfile(false);
+                        setProfileForm({
+                          name: customer.name || '',
+                          mobile: customer.mobile || '',
+                          email: customer.email || '',
+                          address: customer.address || '',
+                          city: customer.city || '',
+                          state: customer.state || '',
+                          country: customer.country || 'India'
+                        });
+                      }}
+                    >
+                      <X size={16} /> Cancel
+                    </button>
                   </div>
                 )}
               </div>
-              <input
-                type="number"
-                className="material-qty-input"
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
-                min="1"
-                placeholder="Total Amount (₹)"
-              />
-              <button
-                className="add-btn"
-                onClick={handleSavePayment}
-                disabled={!selectedPaymentWork || !paymentAmount || savingPayment}
-              >
-                {savingPayment ? <span className="loader-white"></span> : null}
-                💰 Create Payment Plan
-              </button>
-            </div>
 
-            {/* Display payments for each work - Show latest payment plans first */}
-            {[...(paymentList || [])].reverse().map((pay, displayIdx) => {
-              const paidTotal = pay.paid.reduce((sum, p) => sum + p.amount, 0);
-              const pending = pay.totalAmount - paidTotal;
-              return (
-                <div key={displayIdx} className="payment-work-block">
-                  <div className="payment-work-row">
-                    <div>
-                      <div className="payment-work-label">Work Name</div>
-                      <div className="payment-work-value">{pay.work}</div>
-                    </div>
-                    <div>
-                      <div className="payment-work-label">Total Amount</div>
-                      <div className="payment-work-value">₹{pay.totalAmount.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div className="payment-work-label">Amount Paid</div>
-                      <div className="payment-work-value">₹{paidTotal.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div className="payment-work-label">Pending Amount</div>
-                      <div className="payment-work-value">₹{pending.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div className="payment-work-label">Payment Status</div>
-                      <div className={`payment-status ${pending === 0 ? "done" : "pending"}`}>
-                        {pending === 0 ? "✅ Completed" : "⏳ Pending"}
-                      </div>
-                    </div>
+              <div className="customer-profile-grid">
+                <div className="customer-form-group">
+                  <label>Name</label>
+                  <div className="customer-input-wrapper">
+                    <User size={18} />
+                    <input
+                      type="text"
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
+                      disabled={!editProfile}
+                    />
+                  </div>
+                </div>
+
+                <div className="customer-form-group">
+                  <label>Mobile</label>
+                  <div className="customer-input-wrapper">
+                    <Phone size={18} />
+                    <input
+                      type="text"
+                      value={profileForm.mobile}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, mobile: e.target.value }))}
+                      disabled={!editProfile}
+                      maxLength={10}
+                    />
+                  </div>
+                </div>
+
+                <div className="customer-form-group">
+                  <label>Email</label>
+                  <div className="customer-input-wrapper">
+                    <Mail size={18} />
+                    <input
+                      type="email"
+                      value={profileForm.email}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
+                      disabled={!editProfile}
+                    />
+                  </div>
+                </div>
+
+                <div className="customer-form-group customer-form-full">
+                  <label>Address</label>
+                  <div className="customer-input-wrapper">
+                    <MapPin size={18} />
+                    <input
+                      type="text"
+                      value={profileForm.address}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, address: e.target.value }))}
+                      disabled={!editProfile}
+                    />
+                  </div>
+                </div>
+
+                <div className="customer-form-group">
+                  <label>City</label>
+                  <div className="customer-input-wrapper">
+                    <MapPin size={18} />
+                    <input
+                      type="text"
+                      value={profileForm.city}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, city: e.target.value }))}
+                      disabled={!editProfile}
+                    />
+                  </div>
+                </div>
+
+                <div className="customer-form-group">
+                  <label>State</label>
+                  <div className="customer-input-wrapper">
+                    <MapPin size={18} />
+                    <input
+                      type="text"
+                      value={profileForm.state}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, state: e.target.value }))}
+                      disabled={!editProfile}
+                    />
+                  </div>
+                </div>
+
+                <div className="customer-form-group">
+                  <label>Country</label>
+                  <div className="customer-input-wrapper">
+                    <MapPin size={18} />
+                    <input
+                      type="text"
+                      value={profileForm.country}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, country: e.target.value }))}
+                      disabled={!editProfile}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Work Tab */}
+          {activeTab === 'work' && (
+            <div className="customer-work-section">
+              <div className="customer-section-header">
+                <h3>Work Management</h3>
+              </div>
+
+              {/* Add Work Form */}
+              <div className="customer-add-form">
+                <div className="customer-form-row">
+                  <div className="customer-form-group">
+                    <label>Work Title *</label>
+                    <input
+                      type="text"
+                      placeholder="Enter work title"
+                      value={workForm.workTitle}
+                      onChange={(e) => setWorkForm(prev => ({ ...prev, workTitle: e.target.value }))}
+                    />
                   </div>
 
-                  {pay.addedBy && (
-                    <div className="payment-work-setup-info">
-                      💼 Payment plan created by: <strong>{pay.addedBy}</strong> | 📅 {pay.date} ⏰ {pay.time}
-                    </div>
-                  )}
+                  <div className="customer-form-group">
+                    <label>Service Category *</label>
+                    <select
+                      value={workForm.category}
+                      onChange={(e) => setWorkForm(prev => ({ ...prev, category: e.target.value }))}
+                    >
+                      <option value="">Select Category</option>
+                      {serviceCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                  {/* Add payment for this work */}
-                  {pending > 0 && (
-                    <div className="payment-add-section">
-                      <div className="payment-add-row">
-                        <div className="material-dropdown-container payment-mode-dropdown" style={{zIndex: 999}}>
-                          <button
-                            type="button"
-                            className="material-dropdown-header"
-                            onClick={() => setOpenPaymentModeDropdown(openPaymentModeDropdown === displayIdx ? null : displayIdx)}
-                          >
-                            <span>
-                              {paymentComments[displayIdx + "_mode"] || paymentMode || "Select Payment Mode"}
-                            </span>
-                            <ChevronDown className="icon" />
-                          </button>
-                          {openPaymentModeDropdown === displayIdx && (
-                            <div className="material-dropdown-list" style={{zIndex: 1000}}>
-                              <div className="material-dropdown-scroll">
-                                {paymentModes.map((mode, i) => (
-                                  <div
-                                    key={i}
-                                    className="material-dropdown-item"
-                                    onClick={() => {
-                                      setPaymentMode(mode);
-                                      setPaymentComments(prev => ({ ...prev, [displayIdx + "_mode"]: mode }));
-                                      setOpenPaymentModeDropdown(null);
-                                    }}
-                                  >
-                                    💳 {mode}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <input
-                          type="text"
-                          className="material-qty-input"
-                          value={paymentComments[displayIdx] || ""}
-                          onChange={(e) => setPaymentComments(prev => ({ ...prev, [displayIdx]: e.target.value }))}
-                          placeholder="Enter payment description/comment..."
-                        />
-                        <button
-                          className="add-btn"
-                          onClick={() => handleAddPayment(displayIdx)}
-                          disabled={!(paymentComments[displayIdx + "_mode"] || paymentMode) || !paymentComments[displayIdx] || savingPayment}
-                        >
-                          {savingPayment ? <span className="loader-white"></span> : null}
-                          💰 Record Payment
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <button
+                    className="customer-add-btn"
+                    onClick={handleSaveWork}
+                    disabled={savingWork}
+                  >
+                    {savingWork ? 'Saving...' : <><Plus size={16} /> Add Work</>}
+                  </button>
+                </div>
+              </div>
 
-                  {/* List of payments - Show latest payments first */}
-                  <div className="payment-records-list">
-                    {[...(pay.paid || [])].reverse().map((p, i) => (
-                      <div key={i} className="payment-paid-row">
-                        <div>
-                          <div className="payment-paid-label">💰 Amount Paid</div>
-                          <div className="payment-paid-value">₹{p.amount.toLocaleString()}</div>
+              {/* Works List */}
+              <div className="customer-works-list">
+                <h4>All Works ({works.length})</h4>
+                {works.length === 0 ? (
+                  <div className="customer-empty-state">
+                    <Briefcase size={48} />
+                    <p>No works added yet</p>
+                  </div>
+                ) : (
+                  <div className="customer-works-grid">
+                    {works.map(work => (
+                      <div key={work.id} className="customer-work-card">
+                        <div className="customer-work-header">
+                          <h5>{work.title}</h5>
+                          <span className={`customer-work-status ${work.status}`}>
+                            {work.status}
+                          </span>
                         </div>
-                        <div>
-                          <div className="payment-paid-label">💳 Payment Mode</div>
-                          <div className="payment-paid-value">{p.mode}</div>
-                        </div>
-                        <div>
-                          <div className="payment-paid-label">💬 Comment</div>
-                          <div className="payment-paid-value">{p.comment}</div>
-                        </div>
-                        <div>
-                          <div className="payment-paid-label">📅 Date</div>
-                          <div className="payment-paid-value">{p.date}</div>
-                        </div>
-                        <div>
-                          <div className="payment-paid-label">⏰ Time</div>
-                          <div className="payment-paid-value">{p.time}</div>
-                        </div>
-                        {p.addedBy && (
-                          <div>
-                            <div className="payment-paid-label">👤 Recorded By</div>
-                            <div className="payment-paid-value">{p.addedBy}</div>
-                          </div>
-                        )}
+                        <p className="customer-work-category">{work.category}</p>
+                        <p className="customer-work-date">
+                          <Calendar size={14} />
+                          {new Date(work.createdAt).toLocaleDateString()}
+                        </p>
                       </div>
                     ))}
                   </div>
-                </div>
-              );
-            })}
-
-            {paymentList.length === 0 && (
-              <div className="payment-empty-state">
-                <div className="empty-icon">💰</div>
-                <h5>No Payment Plans Created</h5>
-                <p>Create a payment plan for your customer's work above to start tracking payments</p>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Activity Tab */}
-          <div className={`profile-details-con ${stage === 'activity' ? '' : 'd-none'}`}>
-            <div className="activity-list">
-              <h4>Activity Timeline</h4>
-              <div className="manual-activity-add-row">
-                <input
-                  type="text"
-                  placeholder="Enter activity description..."
-                  value={manualActivityInput}
-                  onChange={(e) => setManualActivityInput(e.target.value)}
-                  className="manual-activity-input"
-                />
-                <button className="add-btn" onClick={handleAddManualActivity} disabled={loading}>
-                  {loading ? <span className="loader-white"></span> : null}
-                  Add Activity
+          {/* Materials Tab */}
+          {activeTab === 'materials' && (
+            <div className="customer-materials-section">
+              <div className="customer-section-header">
+                <h3>Materials Management</h3>
+              </div>
+
+              {/* Add Material Form */}
+              <div className="customer-add-form">
+                <div className="customer-form-row">
+                  <div className="customer-form-group">
+                    <label>Select Work *</label>
+                    <select
+                      value={selectedWork}
+                      onChange={(e) => setSelectedWork(e.target.value)}
+                    >
+                      <option value="">Choose Work</option>
+                      {works.map(work => (
+                        <option key={work.id} value={work.id}>{work.title}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="customer-form-group">
+                    <label>Material *</label>
+                    <div className="customer-dropdown-container">
+                      <div
+                        className={`customer-dropdown-header ${showMaterialDropdown ? 'active' : ''}`}
+                        onClick={() => setShowMaterialDropdown(!showMaterialDropdown)}
+                      >
+                        <span>
+                          {selectedMaterial ? selectedMaterial.name : 'Select Material'}
+                        </span>
+                        <ChevronDown size={16} className={showMaterialDropdown ? 'rotated' : ''} />
+                      </div>
+                      {showMaterialDropdown && (
+                        <div className="customer-dropdown-menu">
+                          <div className="customer-dropdown-search">
+                            <Search size={16} />
+                            <input
+                              type="text"
+                              placeholder="Search materials..."
+                              value={materialSearchTerm}
+                              onChange={(e) => setMaterialSearchTerm(e.target.value)}
+                            />
+                          </div>
+                          <div className="customer-dropdown-options">
+                            {getFilteredMaterials().length === 0 ? (
+                              <div className="customer-dropdown-empty">No materials found</div>
+                            ) : (
+                              getFilteredMaterials().map(material => (
+                                <div
+                                  key={material.id}
+                                  className="customer-dropdown-option"
+                                  onClick={() => handleMaterialSelect(material)}
+                                >
+                                  <Package size={14} />
+                                  <div>
+                                    <p>{material.name}</p>
+                                    <span>₹{material.price} • {material.category}</span>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="customer-form-group">
+                    <label>Quantity *</label>
+                    <input
+                      type="number"
+                      placeholder="Enter quantity"
+                      value={materialQuantity}
+                      onChange={(e) => setMaterialQuantity(e.target.value)}
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+
+                  <button
+                    className="customer-add-btn"
+                    onClick={handleSaveMaterial}
+                    disabled={savingMaterial}
+                  >
+                    {savingMaterial ? 'Saving...' : <><Plus size={16} /> Add Material</>}
+                  </button>
+                </div>
+              </div>
+
+              {/* Materials List */}
+              <div className="customer-materials-list">
+                <h4>Used Materials ({customerMaterials.length})</h4>
+                {customerMaterials.length === 0 ? (
+                  <div className="customer-empty-state">
+                    <Package size={48} />
+                    <p>No materials added yet</p>
+                  </div>
+                ) : (
+                  <div className="customer-table-wrapper">
+                    <table className="customer-table">
+                      <thead>
+                        <tr>
+                          <th>Material</th>
+                          <th>Work</th>
+                          <th>Category</th>
+                          <th>Quantity</th>
+                          <th>Unit Price</th>
+                          <th>Total Cost</th>
+                          <th>Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {customerMaterials.map(material => (
+                          <tr key={material.id}>
+                            <td>{material.materialName}</td>
+                            <td>{material.workTitle}</td>
+                            <td><span className="customer-badge">{material.category}</span></td>
+                            <td>{material.quantity}</td>
+                            <td>₹{material.unitPrice}</td>
+                            <td className="customer-amount">₹{material.totalCost.toLocaleString()}</td>
+                            <td>{new Date(material.addedAt).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {customerMaterials.length > 0 && (
+                  <div className="customer-total-summary">
+                    <span>Total Materials Cost:</span>
+                    <strong>₹{customerMaterials.reduce((sum, m) => sum + m.totalCost, 0).toLocaleString()}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Payment Tab */}
+          {activeTab === 'payment' && (
+            <div className="customer-payment-section">
+              <div className="customer-section-header">
+                <h3>Payment Management</h3>
+              </div>
+
+              {/* Add Payment Form */}
+              <div className="customer-add-form">
+                <div className="customer-form-grid">
+                  <div className="customer-form-group">
+                    <label>Select Work *</label>
+                    <select
+                      value={paymentForm.workId}
+                      onChange={(e) => setPaymentForm(prev => ({ ...prev, workId: e.target.value }))}
+                    >
+                      <option value="">Choose Work</option>
+                      {works.map(work => (
+                        <option key={work.id} value={work.id}>{work.title}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="customer-form-group">
+                    <label>Total Work Price *</label>
+                    <input
+                      type="number"
+                      placeholder="Enter total price"
+                      value={paymentForm.workPrice}
+                      onChange={(e) => setPaymentForm(prev => ({ ...prev, workPrice: e.target.value }))}
+                      min="0"
+                    />
+                  </div>
+
+                  <div className="customer-form-group">
+                    <label>Amount Paid *</label>
+                    <input
+                      type="number"
+                      placeholder="Enter amount paid"
+                      value={paymentForm.amountPaid}
+                      onChange={(e) => setPaymentForm(prev => ({ ...prev, amountPaid: e.target.value }))}
+                      min="0"
+                    />
+                  </div>
+
+                  <div className="customer-form-group">
+                    <label>Payment Date *</label>
+                    <input
+                      type="date"
+                      value={paymentForm.paymentDate}
+                      onChange={(e) => setPaymentForm(prev => ({ ...prev, paymentDate: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="customer-form-group">
+                    <label>Payment Mode *</label>
+                    <select
+                      value={paymentForm.paymentMode}
+                      onChange={(e) => setPaymentForm(prev => ({ ...prev, paymentMode: e.target.value }))}
+                    >
+                      {paymentModes.map(mode => (
+                        <option key={mode} value={mode}>{mode}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="customer-form-group customer-form-full">
+                    <label>Notes</label>
+                    <input
+                      type="text"
+                      placeholder="Add notes (optional)"
+                      value={paymentForm.notes}
+                      onChange={(e) => setPaymentForm(prev => ({ ...prev, notes: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  className="customer-add-btn customer-add-btn-full"
+                  onClick={handleSavePayment}
+                  disabled={savingPayment}
+                >
+                  {savingPayment ? 'Saving...' : <><Plus size={16} /> Record Payment</>}
                 </button>
               </div>
-              
-              {(customer.activity || []).length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-state-icon">📋</div>
-                  <div className="empty-state-title">No Activities</div>
-                  <div className="empty-state-text">Activity timeline will appear here</div>
-                </div>
-              ) : (
-                // Show latest activities first by reversing the array
-                [...(customer.activity || [])].reverse().map((act, idx) => (
-                  <div key={idx} className="activity-item">
-                    <span className="activity-name">{act.name}</span>
-                    <span className="activity-type">{act.type}</span>
-                    <span className="activity-date">📅 {act.date}</span>
-                    <span className="activity-time">⏰ {act.time}</span>
-                    {act.quantity && <span className="activity-qty">📦 Qty: {act.quantity}</span>}
-                    {act.amount && <span className="activity-qty">💰 Amount: ₹{act.amount}</span>}
-                    {act.work && <span className="activity-qty">🔧 Work: {act.work}</span>}
-                    {act.mode && <span className="activity-qty">💳 Mode: {act.mode}</span>}
-                    {act.addedBy && (
-                      <span className="activity-qty" style={{ color: 'var(--blue)', fontWeight: 700 }}>
-                        👤 By: {act.addedBy}
-                      </span>
-                    )}
+
+              {/* Payments List */}
+              <div className="customer-payments-list">
+                <h4>Payment History ({payments.length})</h4>
+                {payments.length === 0 ? (
+                  <div className="customer-empty-state">
+                    <IndianRupee size={48} />
+                    <p>No payments recorded yet</p>
                   </div>
-                ))
-              )}
+                ) : (
+                  <>
+                    <div className="customer-payment-cards">
+                      {payments.map(payment => (
+                        <div key={payment.id} className="customer-payment-card">
+                          <div className="customer-payment-header">
+                            <h5>{payment.workTitle}</h5>
+                            <span className="customer-payment-mode">{payment.paymentMode}</span>
+                          </div>
+                          <div className="customer-payment-details">
+                            <div className="customer-payment-row">
+                              <span>Total Price:</span>
+                              <strong>₹{payment.totalPrice.toLocaleString()}</strong>
+                            </div>
+                            <div className="customer-payment-row success">
+                              <span>Amount Paid:</span>
+                              <strong>₹{payment.amountPaid.toLocaleString()}</strong>
+                            </div>
+                            <div className={`customer-payment-row ${payment.balance > 0 ? 'warning' : 'success'}`}>
+                              <span>Balance:</span>
+                              <strong>₹{payment.balance.toLocaleString()}</strong>
+                            </div>
+                          </div>
+                          <div className="customer-payment-footer">
+                            <span><Calendar size={14} /> {new Date(payment.paymentDate).toLocaleDateString()}</span>
+                            {payment.notes && <p>{payment.notes}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="customer-payment-summary">
+                      <div className="customer-summary-card">
+                        <span>Total Revenue</span>
+                        <strong>₹{payments.reduce((sum, p) => sum + p.totalPrice, 0).toLocaleString()}</strong>
+                      </div>
+                      <div className="customer-summary-card success">
+                        <span>Total Received</span>
+                        <strong>₹{payments.reduce((sum, p) => sum + p.amountPaid, 0).toLocaleString()}</strong>
+                      </div>
+                      <div className="customer-summary-card warning">
+                        <span>Total Balance</span>
+                        <strong>₹{payments.reduce((sum, p) => sum + p.balance, 0).toLocaleString()}</strong>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Expenses Tab */}
+          {activeTab === 'expenses' && (
+            <div className="customer-expenses-section">
+              <div className="customer-section-header">
+                <h3>Expenses Management</h3>
+              </div>
+
+              {/* Add Expense Form */}
+              <div className="customer-add-form">
+                <div className="customer-form-grid">
+                  <div className="customer-form-group">
+                    <label>Select Work *</label>
+                    <select
+                      value={expenseForm.workId}
+                      onChange={(e) => setExpenseForm(prev => ({ ...prev, workId: e.target.value }))}
+                    >
+                      <option value="">Choose Work</option>
+                      {works.map(work => (
+                        <option key={work.id} value={work.id}>{work.title}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="customer-form-group">
+                    <label>Expense Type *</label>
+                    <select
+                      value={expenseForm.expenseType}
+                      onChange={(e) => setExpenseForm(prev => ({ ...prev, expenseType: e.target.value }))}
+                    >
+                      <option value="">Select Type</option>
+                      {expenseTypes.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="customer-form-group">
+                    <label>Amount *</label>
+                    <input
+                      type="number"
+                      placeholder="Enter amount"
+                      value={expenseForm.amount}
+                      onChange={(e) => setExpenseForm(prev => ({ ...prev, amount: e.target.value }))}
+                      min="0"
+                    />
+                  </div>
+
+                  <div className="customer-form-group">
+                    <label>Expense Date *</label>
+                    <input
+                      type="date"
+                      value={expenseForm.expenseDate}
+                      onChange={(e) => setExpenseForm(prev => ({ ...prev, expenseDate: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="customer-form-group customer-form-full">
+                    <label>Description</label>
+                    <input
+                      type="text"
+                      placeholder="Add description (optional)"
+                      value={expenseForm.description}
+                      onChange={(e) => setExpenseForm(prev => ({ ...prev, description: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  className="customer-add-btn customer-add-btn-full"
+                  onClick={handleSaveExpense}
+                  disabled={savingExpense}
+                >
+                  {savingExpense ? 'Saving...' : <><Plus size={16} /> Add Expense</>}
+                </button>
+              </div>
+
+              {/* Expenses List */}
+              <div className="customer-expenses-list">
+                <h4>All Expenses ({expenses.length})</h4>
+                {expenses.length === 0 ? (
+                  <div className="customer-empty-state">
+                    <DollarSign size={48} />
+                    <p>No expenses added yet</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="customer-table-wrapper">
+                      <table className="customer-table">
+                        <thead>
+                          <tr>
+                            <th>Work</th>
+                            <th>Expense Type</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {expenses.map(expense => (
+                            <tr key={expense.id}>
+                              <td>{expense.workTitle}</td>
+                              <td><span className="customer-badge">{expense.expenseType}</span></td>
+                              <td className="customer-amount">₹{expense.amount.toLocaleString()}</td>
+                              <td>{new Date(expense.expenseDate).toLocaleDateString()}</td>
+                              <td>{expense.description || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="customer-total-summary">
+                      <span>Total Expenses:</span>
+                      <strong>₹{expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}</strong>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Analytics Tab */}
+          {activeTab === 'analytics' && (
+            <div className="customer-analytics-section">
+              <div className="customer-section-header">
+                <h3>Financial Analytics</h3>
+              </div>
+
+              {/* Overall Analytics */}
+              <div className="customer-analytics-overall">
+                <h4>Overall Summary</h4>
+                <div className="customer-analytics-cards">
+                  <div className="customer-analytics-card revenue">
+                    <div className="customer-analytics-icon">
+                      <TrendingUp size={24} />
+                    </div>
+                    <div>
+                      <p>Total Revenue</p>
+                      <h3>₹{getOverallAnalytics().totalRevenue.toLocaleString()}</h3>
+                    </div>
+                  </div>
+                  <div className="customer-analytics-card cost">
+                    <div className="customer-analytics-icon">
+                      <TrendingDown size={24} />
+                    </div>
+                    <div>
+                      <p>Total Cost</p>
+                      <h3>₹{getOverallAnalytics().totalCost.toLocaleString()}</h3>
+                      <small>Materials: ₹{getOverallAnalytics().totalMaterialsCost.toLocaleString()} | Expenses: ₹{getOverallAnalytics().totalExpensesAmount.toLocaleString()}</small>
+                    </div>
+                  </div>
+                  <div className={`customer-analytics-card ${getOverallAnalytics().totalProfit >= 0 ? 'profit' : 'loss'}`}>
+                    <div className="customer-analytics-icon">
+                      {getOverallAnalytics().totalProfit >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
+                    </div>
+                    <div>
+                      <p>{getOverallAnalytics().totalProfit >= 0 ? 'Total Profit' : 'Total Loss'}</p>
+                      <h3>₹{Math.abs(getOverallAnalytics().totalProfit).toLocaleString()}</h3>
+                      <small>Margin: {getOverallAnalytics().profitPercentage}%</small>
+                    </div>
+                  </div>
+                  <div className="customer-analytics-card balance">
+                    <div className="customer-analytics-icon">
+                      <IndianRupee size={24} />
+                    </div>
+                    <div>
+                      <p>Pending Balance</p>
+                      <h3>₹{getOverallAnalytics().totalBalance.toLocaleString()}</h3>
+                      <small>Received: ₹{getOverallAnalytics().totalReceived.toLocaleString()}</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Work-wise Analytics */}
+              <div className="customer-work-analytics">
+                <h4>Work-wise Analysis</h4>
+                {works.length === 0 ? (
+                  <div className="customer-empty-state">
+                    <Briefcase size={48} />
+                    <p>No works to analyze</p>
+                  </div>
+                ) : (
+                  <div className="customer-work-analytics-grid">
+                    {works.map(work => {
+                      const analytics = getWorkAnalytics(work.id);
+                      return (
+                        <div key={work.id} className="customer-work-analytics-card">
+                          <div className="customer-work-analytics-header">
+                            <h5>{work.title}</h5>
+                            <span className="customer-work-category-badge">{work.category}</span>
+                          </div>
+                          <div className="customer-work-analytics-body">
+                            <div className="customer-analytics-row">
+                              <span>Revenue:</span>
+                              <strong>₹{analytics.totalRevenue.toLocaleString()}</strong>
+                            </div>
+                            <div className="customer-analytics-row">
+                              <span>Received:</span>
+                              <strong className="success">₹{analytics.totalReceived.toLocaleString()}</strong>
+                            </div>
+                            {analytics.balance > 0 && (
+                              <div className="customer-analytics-row">
+                                <span>Balance:</span>
+                                <strong className="warning">₹{analytics.balance.toLocaleString()}</strong>
+                              </div>
+                            )}
+                            <div className="customer-analytics-divider"></div>
+                            <div className="customer-analytics-row">
+                              <span>Materials Cost:</span>
+                              <span>₹{analytics.materialsCost.toLocaleString()}</span>
+                            </div>
+                            <div className="customer-analytics-row">
+                              <span>Expenses:</span>
+                              <span>₹{analytics.totalExpenses.toLocaleString()}</span>
+                            </div>
+                            <div className="customer-analytics-row">
+                              <span>Total Cost:</span>
+                              <strong>₹{analytics.totalCost.toLocaleString()}</strong>
+                            </div>
+                            <div className="customer-analytics-divider"></div>
+                            <div className={`customer-analytics-row ${analytics.profit >= 0 ? 'profit' : 'loss'}`}>
+                              <span>{analytics.profit >= 0 ? 'Profit' : 'Loss'}:</span>
+                              <strong>₹{Math.abs(analytics.profit).toLocaleString()} ({analytics.profitPercentage}%)</strong>
+                            </div>
+                          </div>
+                          <div className="customer-work-analytics-footer">
+                            <span>{analytics.materialsCount} Materials</span>
+                            <span>{analytics.expensesCount} Expenses</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Activity Tab */}
+          {activeTab === 'activity' && (
+            <div className="customer-activity-section">
+              <div className="customer-section-header">
+                <h3>Activity Log</h3>
+                <button
+                  className="customer-add-btn"
+                  onClick={() => setShowActivityForm(!showActivityForm)}
+                >
+                  <Plus size={16} /> Add Activity
+                </button>
+              </div>
+
+              {/* Manual Activity Form */}
+              {showActivityForm && (
+                <div className="customer-activity-form">
+                  <div className="customer-form-row">
+                    <div className="customer-form-group">
+                      <label>Activity Title *</label>
+                      <input
+                        type="text"
+                        placeholder="Enter activity title"
+                        value={manualActivityForm.title}
+                        onChange={(e) => setManualActivityForm(prev => ({ ...prev, title: e.target.value }))}
+                      />
+                    </div>
+                    <div className="customer-form-group">
+                      <label>Type *</label>
+                      <select
+                        value={manualActivityForm.type}
+                        onChange={(e) => setManualActivityForm(prev => ({ ...prev, type: e.target.value }))}
+                      >
+                        <option value="note">Note</option>
+                        <option value="call">Call</option>
+                        <option value="meeting">Meeting</option>
+                        <option value="email">Email</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="customer-form-group">
+                    <label>Description</label>
+                    <input
+                      type="text"
+                      placeholder="Enter description (optional)"
+                      value={manualActivityForm.description}
+                      onChange={(e) => setManualActivityForm(prev => ({ ...prev, description: e.target.value }))}
+                    />
+                  </div>
+                  <div className="customer-form-actions">
+                    <button className="customer-save-btn" onClick={handleAddManualActivity}>
+                      <Save size={16} /> Save Activity
+                    </button>
+                    <button className="customer-cancel-btn" onClick={() => {
+                      setShowActivityForm(false);
+                      setManualActivityForm({ title: '', description: '', type: 'note' });
+                    }}>
+                      <X size={16} /> Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Activity Timeline */}
+              <div className="customer-activity-timeline">
+                {activities.length === 0 ? (
+                  <div className="customer-empty-state">
+                    <Activity size={48} />
+                    <p>No activities yet</p>
+                  </div>
+                ) : (
+                  activities.map(activity => (
+                    <div key={activity.id} className={`customer-activity-item ${activity.type}`}>
+                      <div className="customer-activity-icon">
+                        {activity.type === 'profile' && <User size={16} />}
+                        {activity.type === 'work' && <Briefcase size={16} />}
+                        {activity.type === 'material' && <Package size={16} />}
+                        {activity.type === 'payment' && <IndianRupee size={16} />}
+                        {activity.type === 'expense' && <DollarSign size={16} />}
+                        {(activity.type === 'note' || activity.type === 'call' || activity.type === 'meeting' || activity.type === 'email' || activity.type === 'other') && <ClipboardList size={16} />}
+                      </div>
+                      <div className="customer-activity-content">
+                        <h5>{activity.title}</h5>
+                        <p>{activity.description}</p>
+                        <span className="customer-activity-time">
+                          {new Date(activity.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
