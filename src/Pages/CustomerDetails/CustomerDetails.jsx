@@ -297,6 +297,13 @@ const CustomerDetails = () => {
       toast.warning('Material price is not set. Cost will be recorded as ₹0');
     }
     
+    // Check if sufficient quantity is available
+    const availableQty = Number(selectedMaterial.quantity) || 0;
+    if (qty > availableQty) {
+      toast.error(`Insufficient quantity! Available: ${availableQty} units`);
+      return;
+    }
+    
     setSavingMaterial(true);
     try {
       const work = works.find(w => w.id === selectedWork);
@@ -317,20 +324,38 @@ const CustomerDetails = () => {
       
       const updatedMaterials = [...customerMaterials, newMaterial];
       
+      // Update customer materials
       const customerRef = doc(db, 'Customers', customerId);
       await updateDoc(customerRef, {
         materials: updatedMaterials,
         updatedAt: new Date().toISOString()
       });
       
+      // Decrease material quantity in Materials collection
+      const materialRef = doc(db, 'Materials', selectedMaterial.id);
+      const newQuantity = availableQty - qty;
+      await updateDoc(materialRef, {
+        quantity: newQuantity,
+        updatedAt: new Date().toISOString()
+      });
+      
+      // Update local materials state to reflect new quantity
+      setMaterials(prevMaterials => 
+        prevMaterials.map(m => 
+          m.id === selectedMaterial.id 
+            ? { ...m, quantity: newQuantity }
+            : m
+        )
+      );
+      
       setCustomerMaterials(updatedMaterials);
       setSelectedWork('');
       setSelectedMaterial(null);
       setMaterialQuantity('');
-      toast.success('Material added successfully!');
+      toast.success(`Material added successfully! Remaining stock: ${newQuantity} units`);
       
       // Log activity (don't await to avoid blocking)
-      addActivity('material', 'Material Added', `Added ${qty} units of ${selectedMaterial.name || 'material'} for ${work?.title || 'work'}`).catch(err => {
+      addActivity('material', 'Material Added', `Added ${qty} units of ${selectedMaterial.name || 'material'} for ${work?.title || 'work'}. Remaining stock: ${newQuantity}`).catch(err => {
         console.error('Failed to log activity:', err);
       });
     } catch (error) {
@@ -996,7 +1021,7 @@ const CustomerDetails = () => {
                         onClick={() => setShowMaterialDropdown(!showMaterialDropdown)}
                       >
                         <span>
-                          {selectedMaterial ? selectedMaterial.name : 'Select Material'}
+                          {selectedMaterial ? `${selectedMaterial.name} (Available: ${Number(selectedMaterial.quantity) || 0})` : 'Select Material'}
                         </span>
                         <ChevronDown size={16} className={showMaterialDropdown ? 'rotated' : ''} />
                       </div>
@@ -1015,19 +1040,30 @@ const CustomerDetails = () => {
                             {getFilteredMaterials().length === 0 ? (
                               <div className="customer-dropdown-empty">No materials found</div>
                             ) : (
-                              getFilteredMaterials().map(material => (
-                                <div
-                                  key={material.id}
-                                  className="customer-dropdown-option"
-                                  onClick={() => handleMaterialSelect(material)}
-                                >
-                                  <Package size={14} />
-                                  <div>
-                                    <p>{material.name}</p>
-                                    <span>₹{material.price} • {material.category}</span>
+                              getFilteredMaterials().map(material => {
+                                const availableQty = Number(material.quantity) || 0;
+                                const isOutOfStock = availableQty <= 0;
+                                
+                                return (
+                                  <div
+                                    key={material.id}
+                                    className={`customer-dropdown-option ${isOutOfStock ? 'out-of-stock' : ''}`}
+                                    onClick={() => !isOutOfStock && handleMaterialSelect(material)}
+                                    style={{ opacity: isOutOfStock ? 0.5 : 1, cursor: isOutOfStock ? 'not-allowed' : 'pointer' }}
+                                  >
+                                    <Package size={14} />
+                                    <div>
+                                      <p>{material.name}</p>
+                                      <span>
+                                        ₹{material.price || 0} • {material.category || 'N/A'} • 
+                                        <strong style={{ color: isOutOfStock ? '#ef4444' : availableQty < 10 ? '#f59e0b' : '#10b981', marginLeft: '4px' }}>
+                                          Stock: {availableQty}
+                                        </strong>
+                                      </span>
+                                    </div>
                                   </div>
-                                </div>
-                              ))
+                                );
+                              })
                             )}
                           </div>
                         </div>
@@ -1036,7 +1072,7 @@ const CustomerDetails = () => {
                   </div>
 
                   <div className="customer-form-group">
-                    <label>Quantity *</label>
+                    <label>Quantity * {selectedMaterial && `(Available: ${Number(selectedMaterial.quantity) || 0})`}</label>
                     <input
                       type="number"
                       placeholder="Enter quantity"
@@ -1044,6 +1080,7 @@ const CustomerDetails = () => {
                       onChange={(e) => setMaterialQuantity(e.target.value)}
                       min="0"
                       step="0.01"
+                      max={selectedMaterial ? Number(selectedMaterial.quantity) || 0 : undefined}
                     />
                   </div>
 
