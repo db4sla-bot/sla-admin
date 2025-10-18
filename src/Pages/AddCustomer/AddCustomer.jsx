@@ -3,7 +3,7 @@ import './AddCustomer.css'
 import Hamburger from "../../Components/Hamburger/Hamburger";
 import { Funnel, Users, User, Phone, Mail, MapPin } from 'lucide-react';
 import { toast } from "react-toastify";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../../Firebase";
 
 const AddCustomer = () => {
@@ -51,9 +51,34 @@ const AddCustomer = () => {
       toast.error("Customer name is required!");
       return;
     }
+    if (!formData.mobile || formData.mobile.length !== 10) {
+      toast.error("Valid 10-digit mobile number is required!");
+      return;
+    }
     setSaving(true);
     try {
-      await setDoc(doc(db, "Customers", formData.name), {
+      // Check if customer with this mobile number already exists
+      let customerId = formData.mobile;
+      let counter = 1;
+      let customerExists = true;
+      
+      // Find available ID by checking if document exists
+      while (customerExists) {
+        const customerRef = doc(db, "Customers", customerId);
+        const customerSnap = await getDoc(customerRef);
+        
+        if (!customerSnap.exists()) {
+          // ID is available
+          customerExists = false;
+        } else {
+          // ID exists, try next suffix
+          customerId = `${formData.mobile}_${counter}`;
+          counter++;
+        }
+      }
+      
+      // Use the available customerId (either original mobile or mobile_1, mobile_2, etc.)
+      await setDoc(doc(db, "Customers", customerId), {
         ...formData,
         lookingFor, // save lookingFor array
         work: [],
@@ -62,7 +87,14 @@ const AddCustomer = () => {
         createdAt: new Date().toISOString(), // Add created date
         updatedAt: new Date().toISOString()
       });
-      toast.success("Customer added successfully!");
+      
+      if (counter > 1) {
+        toast.success(`Customer added successfully! (ID: ${customerId})`);
+        toast.info(`Note: A customer with mobile ${formData.mobile} already exists.`);
+      } else {
+        toast.success("Customer added successfully!");
+      }
+      
       // Reset form
       setFormData({
         name: "",
