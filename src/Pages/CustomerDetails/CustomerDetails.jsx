@@ -87,13 +87,20 @@ const CustomerDetails = () => {
   const [payments, setPayments] = useState([]);
   const [paymentForm, setPaymentForm] = useState({
     workId: '',
-    workPrice: '',
-    amountPaid: '',
+    totalAmount: ''
+  });
+  const [savingPayment, setSavingPayment] = useState(false);
+  
+  // Installment states
+  const [installmentForm, setInstallmentForm] = useState({
+    paymentId: '',
+    amount: '',
     paymentDate: new Date().toISOString().split('T')[0],
     paymentMode: 'Cash',
     notes: ''
   });
-  const [savingPayment, setSavingPayment] = useState(false);
+  const [savingInstallment, setSavingInstallment] = useState(false);
+  const [showInstallmentForm, setShowInstallmentForm] = useState(false);
   
   // Expenses states
   const [expenses, setExpenses] = useState([]);
@@ -320,8 +327,8 @@ const CustomerDetails = () => {
 
   // Payment handlers
   const handleSavePayment = async () => {
-    if (!paymentForm.workId || !paymentForm.workPrice || !paymentForm.amountPaid) {
-      toast.error('Please fill all payment fields');
+    if (!paymentForm.workId || !paymentForm.totalAmount) {
+      toast.error('Please select work and enter total amount');
       return;
     }
     
@@ -332,12 +339,8 @@ const CustomerDetails = () => {
         id: Date.now().toString(),
         workId: paymentForm.workId,
         workTitle: work?.title || '',
-        totalPrice: parseFloat(paymentForm.workPrice),
-        amountPaid: parseFloat(paymentForm.amountPaid),
-        balance: parseFloat(paymentForm.workPrice) - parseFloat(paymentForm.amountPaid),
-        paymentDate: paymentForm.paymentDate,
-        paymentMode: paymentForm.paymentMode,
-        notes: paymentForm.notes,
+        totalAmount: parseFloat(paymentForm.totalAmount),
+        installments: [],
         createdAt: new Date().toISOString()
       };
       
@@ -349,23 +352,87 @@ const CustomerDetails = () => {
         updatedAt: new Date().toISOString()
       });
       
-      await addActivity('payment', 'Payment Recorded', `Payment of ₹${newPayment.amountPaid} received for ${work?.title}`);
+      await addActivity('payment', 'Payment Record Created', `Payment record created for ${work?.title} - Total: ₹${newPayment.totalAmount}`);
       
       setPayments(updatedPayments);
       setPaymentForm({
         workId: '',
-        workPrice: '',
-        amountPaid: '',
+        totalAmount: ''
+      });
+      toast.success('Payment record created successfully!');
+    } catch (error) {
+      console.error('Error creating payment record:', error);
+      toast.error('Failed to create payment record');
+    }
+    setSavingPayment(false);
+  };
+
+  const handleSaveInstallment = async () => {
+    if (!installmentForm.paymentId || !installmentForm.amount) {
+      toast.error('Please enter installment amount');
+      return;
+    }
+    
+    setSavingInstallment(true);
+    try {
+      const payment = payments.find(p => p.id === installmentForm.paymentId);
+      if (!payment) {
+        toast.error('Payment record not found');
+        setSavingInstallment(false);
+        return;
+      }
+
+      const totalPaid = (payment.installments || []).reduce((sum, inst) => sum + (Number(inst.amount) || 0), 0);
+      const newInstallmentAmount = parseFloat(installmentForm.amount);
+      
+      if (totalPaid + newInstallmentAmount > Number(payment.totalAmount)) {
+        toast.error('Installment amount exceeds remaining balance!');
+        setSavingInstallment(false);
+        return;
+      }
+
+      const newInstallment = {
+        id: Date.now().toString(),
+        amount: newInstallmentAmount,
+        paymentDate: installmentForm.paymentDate,
+        paymentMode: installmentForm.paymentMode,
+        notes: installmentForm.notes,
+        createdAt: new Date().toISOString()
+      };
+      
+      const updatedPayments = payments.map(p => {
+        if (p.id === installmentForm.paymentId) {
+          return {
+            ...p,
+            installments: [...(p.installments || []), newInstallment]
+          };
+        }
+        return p;
+      });
+      
+      const customerRef = doc(db, 'Customers', customerId);
+      await updateDoc(customerRef, {
+        payments: updatedPayments,
+        updatedAt: new Date().toISOString()
+      });
+      
+      await addActivity('payment', 'Installment Added', `Payment of ₹${newInstallmentAmount} received for ${payment.workTitle}`);
+      
+      setPayments(updatedPayments);
+      setInstallmentForm({
+        paymentId: '',
+        amount: '',
         paymentDate: new Date().toISOString().split('T')[0],
         paymentMode: 'Cash',
         notes: ''
       });
-      toast.success('Payment recorded successfully!');
+      setShowInstallmentForm(false);
+      toast.success('Installment added successfully!');
     } catch (error) {
-      console.error('Error recording payment:', error);
-      toast.error('Failed to record payment');
+      console.error('Error adding installment:', error);
+      toast.error('Failed to add installment');
     }
-    setSavingPayment(false);
+    setSavingInstallment(false);
   };
 
   // Expense handlers
@@ -464,11 +531,14 @@ const CustomerDetails = () => {
     const totalExpenses = workExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const totalCost = materialsCost + totalExpenses;
     
-    const totalRevenue = workPayments.reduce((sum, p) => sum + (Number(p.totalPrice) || 0), 0);
-    const totalReceived = workPayments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    const totalRevenue = workPayments.reduce((sum, p) => sum + (Number(p.totalAmount) || 0), 0);
+    const totalReceived = workPayments.reduce((sum, p) => {
+      const installments = p.installments || [];
+      return sum + installments.reduce((iSum, inst) => iSum + (Number(inst.amount) || 0), 0);
+    }, 0);
     const balance = totalRevenue - totalReceived;
     
-    const profit = totalRevenue - totalCost;
+    const profit = totalReceived - totalCost;
     const profitPercentage = totalRevenue > 0 ? ((profit / totalRevenue) * 100).toFixed(2) : 0;
     
     return {
@@ -490,11 +560,14 @@ const CustomerDetails = () => {
     const totalExpensesAmount = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const totalCost = totalMaterialsCost + totalExpensesAmount;
     
-    const totalRevenue = payments.reduce((sum, p) => sum + (Number(p.totalPrice) || 0), 0);
-    const totalReceived = payments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    const totalRevenue = payments.reduce((sum, p) => sum + (Number(p.totalAmount) || 0), 0);
+    const totalReceived = payments.reduce((sum, p) => {
+      const installments = p.installments || [];
+      return sum + installments.reduce((iSum, inst) => iSum + (Number(inst.amount) || 0), 0);
+    }, 0);
     const totalBalance = totalRevenue - totalReceived;
     
-    const totalProfit = totalRevenue - totalCost;
+    const totalProfit = totalReceived - totalCost;
     const profitPercentage = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(2) : 0;
     
     return {
@@ -1020,8 +1093,9 @@ const CustomerDetails = () => {
                 <h3>Payment Management</h3>
               </div>
 
-              {/* Add Payment Form */}
+              {/* Create Payment Record Form */}
               <div className="customer-add-form">
+                <h4 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: 700 }}>Create Payment Record</h4>
                 <div className="customer-form-grid">
                   <div className="customer-form-group">
                     <label>Select Work *</label>
@@ -1037,56 +1111,16 @@ const CustomerDetails = () => {
                   </div>
 
                   <div className="customer-form-group">
-                    <label>Total Work Price *</label>
-                    <input
-                      type="number"
-                      placeholder="Enter total price"
-                      value={paymentForm.workPrice}
-                      onChange={(e) => setPaymentForm(prev => ({ ...prev, workPrice: e.target.value }))}
-                      min="0"
-                    />
-                  </div>
-
-                  <div className="customer-form-group">
-                    <label>Amount Paid *</label>
-                    <input
-                      type="number"
-                      placeholder="Enter amount paid"
-                      value={paymentForm.amountPaid}
-                      onChange={(e) => setPaymentForm(prev => ({ ...prev, amountPaid: e.target.value }))}
-                      min="0"
-                    />
-                  </div>
-
-                  <div className="customer-form-group">
-                    <label>Payment Date *</label>
-                    <input
-                      type="date"
-                      value={paymentForm.paymentDate}
-                      onChange={(e) => setPaymentForm(prev => ({ ...prev, paymentDate: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="customer-form-group">
-                    <label>Payment Mode *</label>
-                    <select
-                      value={paymentForm.paymentMode}
-                      onChange={(e) => setPaymentForm(prev => ({ ...prev, paymentMode: e.target.value }))}
-                    >
-                      {paymentModes.map(mode => (
-                        <option key={mode} value={mode}>{mode}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="customer-form-group customer-form-full">
-                    <label>Notes</label>
-                    <input
-                      type="text"
-                      placeholder="Add notes (optional)"
-                      value={paymentForm.notes}
-                      onChange={(e) => setPaymentForm(prev => ({ ...prev, notes: e.target.value }))}
-                    />
+                    <label>Total Work Amount *</label>
+                    <div className="customer-input-wrapper">
+                      <IndianRupee size={16} />
+                      <input
+                        type="number"
+                        placeholder="Enter total work amount"
+                        value={paymentForm.totalAmount}
+                        onChange={(e) => setPaymentForm(prev => ({ ...prev, totalAmount: e.target.value }))}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1095,49 +1129,193 @@ const CustomerDetails = () => {
                   onClick={handleSavePayment}
                   disabled={savingPayment}
                 >
-                  {savingPayment ? 'Saving...' : <><Plus size={16} /> Record Payment</>}
+                  {savingPayment ? 'Creating...' : <><Plus size={16} /> Create Payment Record</>}
                 </button>
               </div>
 
+              {/* Add Installment Form */}
+              {showInstallmentForm && (
+                <div className="customer-add-form" style={{ marginTop: '24px', background: '#fff3cd', borderColor: '#ffc107' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h4 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Add Installment Payment</h4>
+                    <button
+                      className="customer-cancel-btn"
+                      onClick={() => {
+                        setShowInstallmentForm(false);
+                        setInstallmentForm({
+                          paymentId: '',
+                          amount: '',
+                          paymentDate: new Date().toISOString().split('T')[0],
+                          paymentMode: 'Cash',
+                          notes: ''
+                        });
+                      }}
+                      style={{ padding: '6px 12px' }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <div className="customer-form-grid">
+                    <div className="customer-form-group">
+                      <label>Select Payment Record *</label>
+                      <select
+                        value={installmentForm.paymentId}
+                        onChange={(e) => setInstallmentForm(prev => ({ ...prev, paymentId: e.target.value }))}
+                      >
+                        <option value="">Choose Payment Record</option>
+                        {payments.map(payment => {
+                          const totalPaid = (payment.installments || []).reduce((sum, inst) => sum + (Number(inst.amount) || 0), 0);
+                          const remaining = Number(payment.totalAmount) - totalPaid;
+                          return (
+                            <option key={payment.id} value={payment.id}>
+                              {payment.workTitle} - Remaining: ₹{remaining.toLocaleString()}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    <div className="customer-form-group">
+                      <label>Amount Received *</label>
+                      <div className="customer-input-wrapper">
+                        <IndianRupee size={16} />
+                        <input
+                          type="number"
+                          placeholder="Enter amount received"
+                          value={installmentForm.amount}
+                          onChange={(e) => setInstallmentForm(prev => ({ ...prev, amount: e.target.value }))}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="customer-form-group">
+                      <label>Payment Date *</label>
+                      <input
+                        type="date"
+                        value={installmentForm.paymentDate}
+                        onChange={(e) => setInstallmentForm(prev => ({ ...prev, paymentDate: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="customer-form-group">
+                      <label>Payment Mode *</label>
+                      <select
+                        value={installmentForm.paymentMode}
+                        onChange={(e) => setInstallmentForm(prev => ({ ...prev, paymentMode: e.target.value }))}
+                      >
+                        {paymentModes.map(mode => (
+                          <option key={mode} value={mode}>{mode}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="customer-form-group customer-form-full">
+                      <label>Notes</label>
+                      <input
+                        type="text"
+                        placeholder="Add notes (optional)"
+                        value={installmentForm.notes}
+                        onChange={(e) => setInstallmentForm(prev => ({ ...prev, notes: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    className="customer-add-btn customer-add-btn-full"
+                    onClick={handleSaveInstallment}
+                    disabled={savingInstallment}
+                  >
+                    {savingInstallment ? 'Saving...' : <><Plus size={16} /> Add Installment</>}
+                  </button>
+                </div>
+              )}
+
               {/* Payments List */}
               <div className="customer-payments-list">
-                <h4>Payment History ({payments.length})</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h4 style={{ margin: 0 }}>Payment Records ({payments.length})</h4>
+                  {payments.length > 0 && !showInstallmentForm && (
+                    <button
+                      className="customer-add-btn"
+                      onClick={() => setShowInstallmentForm(true)}
+                      style={{ padding: '8px 16px' }}
+                    >
+                      <Plus size={16} /> Add Installment
+                    </button>
+                  )}
+                </div>
                 {payments.length === 0 ? (
                   <div className="customer-empty-state">
                     <IndianRupee size={48} />
-                    <p>No payments recorded yet</p>
+                    <p>No payment records created yet</p>
                   </div>
                 ) : (
                   <>
                     <div className="customer-payment-cards">
                       {payments.map(payment => {
-                        const totalPrice = Number(payment.totalPrice) || 0;
-                        const amountPaid = Number(payment.amountPaid) || 0;
-                        const balance = Number(payment.balance) || 0;
+                        const totalAmount = Number(payment.totalAmount) || 0;
+                        const installments = payment.installments || [];
+                        const totalPaid = installments.reduce((sum, inst) => sum + (Number(inst.amount) || 0), 0);
+                        const balance = totalAmount - totalPaid;
+                        const paymentStatus = balance === 0 ? 'Paid' : totalPaid > 0 ? 'Partial' : 'Pending';
                         
                         return (
                           <div key={payment.id} className="customer-payment-card">
                             <div className="customer-payment-header">
                               <h5>{payment.workTitle}</h5>
-                              <span className="customer-payment-mode">{payment.paymentMode}</span>
+                              <span className={`customer-payment-mode ${
+                                paymentStatus === 'Paid' ? 'status-paid' : 
+                                paymentStatus === 'Partial' ? 'status-partial' : 'status-pending'
+                              }`}>
+                                {paymentStatus}
+                              </span>
                             </div>
                             <div className="customer-payment-details">
                               <div className="customer-payment-row">
-                                <span>Total Price:</span>
-                                <strong>₹{totalPrice.toLocaleString()}</strong>
+                                <span>Total Amount:</span>
+                                <strong>₹{totalAmount.toLocaleString()}</strong>
                               </div>
                               <div className="customer-payment-row success">
                                 <span>Amount Paid:</span>
-                                <strong>₹{amountPaid.toLocaleString()}</strong>
+                                <strong>₹{totalPaid.toLocaleString()}</strong>
                               </div>
                               <div className={`customer-payment-row ${balance > 0 ? 'warning' : 'success'}`}>
                                 <span>Balance:</span>
                                 <strong>₹{balance.toLocaleString()}</strong>
                               </div>
+                              <div className="customer-payment-row">
+                                <span>Installments:</span>
+                                <strong>{installments.length}</strong>
+                              </div>
                             </div>
+                            
+                            {installments.length > 0 && (
+                              <div className="customer-installments-list">
+                                <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--txt-dark)', margin: '12px 0 8px 0', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+                                  Installment History:
+                                </p>
+                                {installments.map((inst, index) => (
+                                  <div key={inst.id} className="customer-installment-item">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                      <span style={{ fontSize: '12px', color: 'var(--txt-light)' }}>
+                                        #{index + 1} - {inst.paymentMode}
+                                      </span>
+                                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#10b981' }}>
+                                        ₹{Number(inst.amount).toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--txt-light)' }}>
+                                      <span>{new Date(inst.paymentDate).toLocaleDateString()}</span>
+                                      {inst.notes && <span>{inst.notes}</span>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
                             <div className="customer-payment-footer">
-                              <span><Calendar size={14} /> {new Date(payment.paymentDate).toLocaleDateString()}</span>
-                              {payment.notes && <p>{payment.notes}</p>}
+                              <span><Calendar size={14} /> Created: {new Date(payment.createdAt).toLocaleDateString()}</span>
                             </div>
                           </div>
                         );
@@ -1146,15 +1324,23 @@ const CustomerDetails = () => {
                     <div className="customer-payment-summary">
                       <div className="customer-summary-card">
                         <span>Total Revenue</span>
-                        <strong>₹{payments.reduce((sum, p) => sum + (Number(p.totalPrice) || 0), 0).toLocaleString()}</strong>
+                        <strong>₹{payments.reduce((sum, p) => sum + (Number(p.totalAmount) || 0), 0).toLocaleString()}</strong>
                       </div>
                       <div className="customer-summary-card success">
                         <span>Total Received</span>
-                        <strong>₹{payments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0).toLocaleString()}</strong>
+                        <strong>₹{payments.reduce((sum, p) => {
+                          const installments = p.installments || [];
+                          return sum + installments.reduce((iSum, inst) => iSum + (Number(inst.amount) || 0), 0);
+                        }, 0).toLocaleString()}</strong>
                       </div>
                       <div className="customer-summary-card warning">
                         <span>Total Balance</span>
-                        <strong>₹{payments.reduce((sum, p) => sum + (Number(p.balance) || 0), 0).toLocaleString()}</strong>
+                        <strong>₹{payments.reduce((sum, p) => {
+                          const totalAmount = Number(p.totalAmount) || 0;
+                          const installments = p.installments || [];
+                          const paid = installments.reduce((iSum, inst) => iSum + (Number(inst.amount) || 0), 0);
+                          return sum + (totalAmount - paid);
+                        }, 0).toLocaleString()}</strong>
                       </div>
                     </div>
                   </>
