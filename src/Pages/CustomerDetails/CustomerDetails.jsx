@@ -299,6 +299,7 @@ const CustomerDetails = () => {
     
     // Check if sufficient quantity is available
     const availableQty = Number(selectedMaterial.quantity) || 0;
+    const availableRemaining = Number(selectedMaterial.remaining) || 0;
     if (qty > availableQty) {
       toast.error(`Insufficient quantity! Available: ${availableQty} units`);
       return;
@@ -331,19 +332,22 @@ const CustomerDetails = () => {
         updatedAt: new Date().toISOString()
       });
       
-      // Decrease material quantity in Materials collection
+      // Decrease both quantity and remaining in Materials collection
       const materialRef = doc(db, 'Materials', selectedMaterial.id);
       const newQuantity = availableQty - qty;
+      const newRemaining = availableRemaining - qty;
+      
       await updateDoc(materialRef, {
         quantity: newQuantity,
+        remaining: newRemaining,
         updatedAt: new Date().toISOString()
       });
       
-      // Update local materials state to reflect new quantity
+      // Update local materials state to reflect new quantity and remaining
       setMaterials(prevMaterials => 
         prevMaterials.map(m => 
           m.id === selectedMaterial.id 
-            ? { ...m, quantity: newQuantity }
+            ? { ...m, quantity: newQuantity, remaining: newRemaining }
             : m
         )
       );
@@ -352,10 +356,10 @@ const CustomerDetails = () => {
       setSelectedWork('');
       setSelectedMaterial(null);
       setMaterialQuantity('');
-      toast.success(`Material added successfully! Remaining stock: ${newQuantity} units`);
+      toast.success(`Material added successfully! Remaining stock: ${newRemaining} units`);
       
       // Log activity (don't await to avoid blocking)
-      addActivity('material', 'Material Added', `Added ${qty} units of ${selectedMaterial.name || 'material'} for ${work?.title || 'work'}. Remaining stock: ${newQuantity}`).catch(err => {
+      addActivity('material', 'Material Added', `Added ${qty} units of ${selectedMaterial.name || 'material'} for ${work?.title || 'work'}. Remaining stock: ${newRemaining}`).catch(err => {
         console.error('Failed to log activity:', err);
       });
     } catch (error) {
