@@ -41,11 +41,13 @@ import {
   ClipboardList
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useAppContext } from '../../Context';
 
 const CustomerDetails = () => {
   const { customerid } = useParams();
   const navigate = useNavigate();
   const customerId = customerid; // Map to consistent variable name
+  const { isAdmin } = useAppContext(); // Get isAdmin from context
   
   // State for customer data
   const [customer, setCustomer] = useState(null);
@@ -765,13 +767,15 @@ const CustomerDetails = () => {
             <DollarSign size={18} />
             Expenses
           </button>
-          <button
-            className={`customer-tab-button ${activeTab === 'analytics' ? 'customer-tab-active' : ''}`}
-            onClick={() => setActiveTab('analytics')}
-          >
-            <TrendingUp size={18} />
-            Analytics
-          </button>
+          {isAdmin && (
+            <button
+              className={`customer-tab-button ${activeTab === 'analytics' ? 'customer-tab-active' : ''}`}
+              onClick={() => setActiveTab('analytics')}
+            >
+              <TrendingUp size={18} />
+              Analytics
+            </button>
+          )}
           <button
             className={`customer-tab-button ${activeTab === 'activity' ? 'customer-tab-active' : ''}`}
             onClick={() => setActiveTab('activity')}
@@ -1539,7 +1543,7 @@ const CustomerDetails = () => {
           )}
 
           {/* Analytics Tab */}
-          {activeTab === 'analytics' && (
+          {isAdmin && activeTab === 'analytics' && (
             <div className="customer-analytics-section">
               <div className="customer-section-header">
                 <h3>Financial Analytics</h3>

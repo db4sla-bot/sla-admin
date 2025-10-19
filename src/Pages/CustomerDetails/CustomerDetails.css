@@ -201,7 +201,7 @@
 }
 
 .customer-tab-button.customer-tab-active {
-  background: linear-gradient(135deg, var(--blue), #1e40af);
+  background: var(--gradient-bg);
   color: #fff;
   font-weight: 700;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
