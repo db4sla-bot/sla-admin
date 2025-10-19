@@ -24,7 +24,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { saveEmployee } from "../../Scripts/EmployeeService";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, addDoc, collection } from "firebase/firestore";
 import { db } from "../../Firebase";
 import { MenuItemsData } from "../../SLAData";
 
@@ -66,7 +66,7 @@ const AddEmployee = () => {
 
     // Marital Status
     maritalStatus: "",
-    
+
     // Aadhar Card
     aadharNumber: "", // Add Aadhar number field
   });
@@ -126,7 +126,7 @@ const AddEmployee = () => {
     if (!formData.city.trim()) return "City is required";
     if (!formData.state.trim()) return "State is required";
     if (!formData.maritalStatus.trim()) return "Marital Status is required";
-    
+
     // Aadhar validation
     if (!formData.aadharNumber.trim()) return "Aadhar Card Number is required";
     if (!/^\d{12}$/.test(formData.aadharNumber)) return "Aadhar Card Number must be 12 digits";
@@ -158,6 +158,32 @@ const AddEmployee = () => {
     return null;
   };
 
+  const sendEmail = async (to, subject, message) => {
+    try {
+      const response = await fetch('https://sla-backend-seven.vercel.app/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to,
+          subject,
+          message
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Failed to send email:', response.statusText);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error sending email:', error);
+      return false;
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
 
@@ -171,21 +197,79 @@ const AddEmployee = () => {
 
     try {
       // Save employee to Employees collection with username as doc id
-      await setDoc(doc(db, "Employees", formData.username), {
+      const employeeData = {
         ...formData,
         status,
         statusColor,
         maritalStatus: formData.maritalStatus,
         access
-      });
+      };
 
-      // Create Firebase Auth user with username and password
-      const auth = getAuth();
-      await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
+      const docRef = await addDoc(collection(db, "Employees"), employeeData);
+
+      // Send welcome email to employee
+      const welcomeSubject = "Welcome to SLA - Your Account Details";
+      const welcomeMessage = `
+Dear ${formData.name},
+
+Welcome to SLA! We're excited to have you join our team.
+
+Your account has been successfully created. Here are your login credentials:
+
+Username: ${formData.email}
+Password: ${formData.password}
+Employee ID: ${formData.username}
+Department: ${formData.department}
+Designation: ${formData.designation}
+
+Please keep these credentials secure and change your password after your first login for security purposes.
+
+For any questions or assistance, please contact the HR department.
+
+Best regards,
+SLA Admin Team
+      `.trim();
+
+      // Send notification email to admin
+      const adminSubject = "New Employee Created - SLA Admin";
+      const adminMessage = `
+A new employee has been successfully added to the system.
+
+Employee Details:
+- Name: ${formData.name}
+- Email: ${formData.email}
+- Employee ID: ${formData.username}
+- Designation: ${formData.designation}
+- Department: ${formData.department}
+- Phone: ${formData.phone}
+- Joining Date: ${new Date(formData.joiningDate).toLocaleDateString('en-IN')}
+- Date Created: ${new Date().toLocaleDateString('en-IN')}
+
+The employee has been sent their login credentials via email.
+
+Best regards,
+SLA System
+      `.trim();
+
+      // Send both emails (don't block the success flow if emails fail)
+      Promise.all([
+        sendEmail(formData.email, welcomeSubject, welcomeMessage),
+        sendEmail('db4sla@gmail.com', adminSubject, adminMessage)
+      ]).then(([employeeEmailSent, adminEmailSent]) => {
+        if (employeeEmailSent) {
+          console.log('Welcome email sent to employee successfully');
+          toast.success('Welcome email sent to employee!');
+        } else {
+          console.log('Failed to send welcome email to employee');
+          toast.warning('Employee created but welcome email failed to send');
+        }
+
+        if (adminEmailSent) {
+          console.log('Notification email sent to admin successfully');
+        } else {
+          console.log('Failed to send notification email to admin');
+        }
+      });
 
       toast.success(`✅ Employee saved and user created 🎉 (Username: ${formData.username})`);
 
@@ -234,9 +318,9 @@ const AddEmployee = () => {
             Add Employees
           </h1>
         </div>
-        <button 
-          className="add-employee-button" 
-          onClick={handleSave} 
+        <button
+          className="add-employee-button"
+          onClick={handleSave}
           disabled={loading}
         >
           {loading ? (
