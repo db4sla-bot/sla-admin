@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sla-admin-v1760779465705';
+const CACHE_NAME = 'sla-admin-v1760847507796';
 const urlsToCache = [
   '/',
   '/manifest.json',

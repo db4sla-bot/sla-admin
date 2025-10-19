@@ -895,10 +895,11 @@
   .customers-top-bar-container {
     flex-direction: column;
     align-items: stretch;
+    padding: 10px;
   }
 
-  .customers-breadcrumps-container {
-    text-align: center;
+  .customers-breadcrumps-container h1 {
+    font-size: 18px;
   }
 
   .customers-actions-container {
@@ -909,11 +910,22 @@
   .customers-add-btn {
     flex: 1;
     justify-content: center;
+    padding: 10px 16px;
+    font-size: 13px;
   }
 
   .customers-header {
     flex-direction: column;
     text-align: center;
+    padding: 16px;
+  }
+
+  .customers-header-info h1 {
+    font-size: 20px;
+  }
+
+  .customers-header-info p {
+    font-size: 13px;
   }
 
   .customers-counts-display {
@@ -924,10 +936,29 @@
   .customers-count-card {
     flex: 1 1 calc(50% - 8px);
     min-width: calc(50% - 8px);
+    padding: 10px 12px;
+  }
+
+  .customers-count-number {
+    font-size: 18px;
+  }
+
+  .customers-count-label {
+    font-size: 10px;
+  }
+
+  .customers-filters {
+    padding: 12px;
+  }
+
+  .customers-search-input {
+    font-size: 13px;
+    padding: 10px 10px 10px 40px;
   }
 
   .customers-filter-row {
     flex-direction: column;
+    gap: 10px;
   }
 
   .customers-date-filter-group,
@@ -940,113 +971,557 @@
 
   .customers-date-filter-group {
     flex-direction: row;
+    padding: 8px;
+  }
+
+  .customers-date-input {
+    font-size: 12px;
+    padding: 6px 6px 6px 26px;
+  }
+
+  .customers-services-select,
+  .customers-payment-status-select {
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .customers-clear-filters {
+    padding: 10px 16px;
+    font-size: 13px;
   }
 
   .customers-summary {
     flex-direction: column;
     text-align: center;
+    padding: 12px 14px;
+  }
+
+  .customers-summary-info p {
+    font-size: 12px;
+  }
+
+  .customers-page-info {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  /* Table optimizations for mobile */
+  .customers-table {
+    min-width: 1000px;
+  }
+
+  .customers-table th,
+  .customers-table td {
+    padding: 10px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* Ensure single-line content in table cells */
+  .customers-info {
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .customers-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .customers-details {
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .customers-name {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+  }
+
+  .customers-id {
+    font-size: 10px;
+    padding: 2px 5px;
+    white-space: nowrap;
+  }
+
+  .customers-contact-info {
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .customers-phone {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .customers-phone::before {
+    font-size: 14px;
+  }
+
+  .customers-email {
+    font-size: 10px;
+    padding: 3px 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+
+  /* Address can wrap but constrain width */
+  .customers-address-info {
+    max-width: 200px;
+  }
+
+  .customers-address {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .customers-address::before {
+    font-size: 12px;
+  }
+
+  .customers-city-state {
+    font-size: 11px;
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
+
+  .customers-payment-summary {
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .customers-total-projects {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .customers-total-projects::before {
+    font-size: 14px;
+  }
+
+  .customers-payment-status {
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .customers-status-badge {
+    font-size: 9px;
+    padding: 3px 7px;
+    white-space: nowrap;
+  }
+
+  .customers-status-badge.completed::before,
+  .customers-status-badge.pending::before {
+    font-size: 10px;
+  }
+
+  .customers-amount-info {
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .customers-total-amount {
+    font-size: 13px;
+    padding: 5px 10px;
+    white-space: nowrap;
+  }
+
+  .customers-total-amount::before {
+    font-size: 14px;
+  }
+
+  .customers-pending-amount {
+    font-size: 10px;
+    padding: 3px 6px;
+    white-space: nowrap;
+  }
+
+  .customers-date {
+    font-size: 11px;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+
+  .customers-date::before {
+    font-size: 12px;
+  }
+
+  .customers-view-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .customers-view-btn svg {
+    width: 15px;
+    height: 15px;
   }
 
   .customers-pagination {
     flex-direction: column;
+    padding: 14px 16px;
+    gap: 12px;
   }
 
   .customers-pagination-info {
     text-align: center;
+    font-size: 12px;
+  }
+
+  .customers-page-btn {
+    font-size: 12px;
+    padding: 8px 12px;
   }
 
   .customers-page-btn svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
+  }
+
+  .customers-page-number {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .customers-empty-icon {
+    font-size: 56px;
+  }
+
+  .customers-empty h3 {
+    font-size: 20px;
+  }
+
+  .customers-empty p {
+    font-size: 13px;
+  }
+
+  .customers-empty-add-btn {
+    font-size: 13px;
+    padding: 12px 20px;
+  }
+
+  .customers-clear-filters-btn {
+    font-size: 13px;
+    padding: 12px 20px;
   }
 }
 
 @media (max-width: 480px) {
   .customers-main-container {
+    padding: 6px;
+  }
+
+  .customers-top-bar-container {
     padding: 8px;
+  }
+
+  .customers-breadcrumps-container h1 {
+    font-size: 16px;
+  }
+
+  .customers-add-btn {
+    padding: 8px 14px;
+    font-size: 12px;
   }
 
   .customers-header,
   .customers-filters {
-    padding: 12px;
+    padding: 10px;
+  }
+
+  .customers-header-info h1 {
+    font-size: 18px;
+  }
+
+  .customers-header-info p {
+    font-size: 12px;
   }
 
   .customers-count-card {
     flex: 1 1 100%;
     min-width: 100%;
+    padding: 8px 10px;
+  }
+
+  .customers-count-number {
+    font-size: 16px;
+  }
+
+  .customers-count-label {
+    font-size: 9px;
+  }
+
+  .customers-search-input {
+    padding: 8px 8px 8px 36px;
+    font-size: 12px;
+  }
+
+  .customers-search-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .customers-date-filter-group {
     flex-direction: column;
-    padding: 12px;
+    padding: 10px;
+    gap: 8px;
   }
 
   .customers-date-filter {
     min-width: 100%;
   }
 
+  .customers-date-input {
+    font-size: 12px;
+    padding: 8px 8px 8px 28px;
+  }
+
+  .customers-date-label {
+    font-size: 9px;
+  }
+
+  .customers-services-select,
+  .customers-payment-status-select {
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  .customers-clear-filters {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .customers-summary {
+    padding: 10px 12px;
+  }
+
+  .customers-summary-info p {
+    font-size: 11px;
+  }
+
+  .customers-total-info,
+  .customers-filter-info {
+    font-size: 10px;
+  }
+
+  .customers-page-info {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  /* Smaller table elements for extra small screens */
   .customers-table {
-    min-width: 800px;
+    min-width: 900px;
   }
 
   .customers-table th,
   .customers-table td {
-    padding: 8px;
-    font-size: 12px;
+    padding: 8px 10px;
+    font-size: 11px;
   }
 
   .customers-avatar {
     width: 32px;
     height: 32px;
-    font-size: 14px;
+    font-size: 13px;
+    border-radius: 6px;
   }
 
   .customers-name {
+    font-size: 12px;
+    max-width: 120px;
+  }
+
+  .customers-id {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  .customers-phone {
+    font-size: 11px;
+  }
+
+  .customers-phone::before {
+    font-size: 12px;
+  }
+
+  .customers-email {
+    font-size: 9px;
+    padding: 2px 5px;
+    max-width: 150px;
+  }
+
+  .customers-address {
+    font-size: 11px;
+  }
+
+  .customers-address::before {
+    font-size: 11px;
+  }
+
+  .customers-city-state {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+
+  .customers-total-projects {
+    font-size: 12px;
+  }
+
+  .customers-total-projects::before {
     font-size: 13px;
   }
 
-  .customers-id,
-  .customers-email,
-  .customers-city-state {
+  .customers-status-badge {
+    font-size: 8px;
+    padding: 2px 6px;
+  }
+
+  .customers-status-badge.completed::before,
+  .customers-status-badge.pending::before {
+    font-size: 9px;
+  }
+
+  .customers-total-amount {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .customers-total-amount::before {
+    font-size: 13px;
+  }
+
+  .customers-pending-amount {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+
+  .customers-date {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .customers-date::before {
+    font-size: 11px;
+  }
+
+  .customers-view-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .customers-view-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .customers-pagination {
+    padding: 12px 14px;
+  }
+
+  .customers-pagination-info {
     font-size: 11px;
   }
 
   .customers-pagination-controls {
     width: 100%;
+    gap: 6px;
   }
 
   .customers-page-numbers {
     order: -1;
     margin-bottom: 8px;
+    gap: 3px;
   }
 
   .customers-page-btn {
     flex: 1;
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .customers-page-btn svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .customers-page-number {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .customers-empty {
+    padding: 50px 15px;
+  }
+
+  .customers-empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+
+  .customers-empty h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .customers-empty p {
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+
+  .customers-empty-add-btn,
+  .customers-clear-filters-btn {
+    font-size: 12px;
+    padding: 10px 18px;
+  }
+
+  .customers-loading {
+    padding: 50px 15px;
+  }
+
+  .customers-loader {
+    width: 40px;
+    height: 40px;
+    border-width: 3px;
+    margin-bottom: 16px;
+  }
+
+  .customers-loading p {
+    font-size: 14px;
   }
 }
 
 /* Touch-friendly improvements */
 @media (hover: none) and (pointer: coarse) {
   .customers-view-btn {
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 40px;
+    min-height: 40px;
   }
 
   .customers-search-input,
   .customers-date-input,
   .customers-services-select,
   .customers-payment-status-select {
-    min-height: 44px;
+    min-height: 40px;
     font-size: 16px;
   }
 
   .customers-page-btn,
   .customers-page-number {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 40px;
+    min-width: 40px;
   }
 
   .customers-clear-filters {
-    min-height: 44px;
+    min-height: 40px;
   }
 }

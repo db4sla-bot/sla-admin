@@ -1432,294 +1432,493 @@
   background: #f8fafc;
   border-radius: 12px;
   padding: 20px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
+  /* border: 1px solid #e5e7f; */
+}
+
+.timesheet-simple-employee-info {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.timesheet-simple-employee-card:hover {
-  background: #fff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-.timesheet-simple-employee-info {
+.timesheet-simple-employee-details {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .timesheet-simple-employee-details h5 {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--txt-dark);
-  margin: 0 0 4px 0;
+  margin: 0;
 }
 
 .timesheet-simple-employee-details p {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--txt-light);
   margin: 0;
 }
 
-.timesheet-simple-employee-number {
-  background: var(--blue);
-  color: #fff;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  margin-right: 16px;
-}
-
 .timesheet-simple-radio-group {
+  width: 100%;
   display: flex;
-  gap: 16px;
-  align-items: center;
+  justify-content: space-around;
+  gap: 8px;
 }
 
 .timesheet-simple-radio-option {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  position: relative;
-  min-width: 120px;
   justify-content: center;
-}
-
-.timesheet-simple-radio-option input[type="radio"] {
-  display: none;
-}
-
-.timesheet-simple-radio-option.present {
-  color: #22c55e;
-}
-
-.timesheet-simple-radio-option.absent {
-  color: #ef4444;
-}
-
-.timesheet-simple-radio-option.wfh {
-  color: #3b82f6;
-}
-
-.timesheet-simple-radio-option:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.timesheet-simple-radio-option input[type="radio"]:checked + .radio-custom + svg,
-.timesheet-simple-radio-option input[type="radio"]:checked ~ svg {
-  transform: scale(1.2);
-}
-
-.timesheet-simple-radio-option.present input[type="radio"]:checked ~ * {
-  color: #22c55e;
-}
-
-.timesheet-simple-radio-option.absent input[type="radio"]:checked ~ * {
-  color: #ef4444;
-}
-
-.timesheet-simple-radio-option.wfh input[type="radio"]:checked ~ * {
-    color: #3b82f6;
-}
-
-.timesheet-simple-radio-option.present:has(input:checked) {
-  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-  border-color: #22c55e;
-  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
-}
-
-.timesheet-simple-radio-option.absent:has(input:checked) {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2);
-  border-color: #ef4444;
-  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
-}
-
-.timesheet-simple-radio-option.wfh:has(input:checked) {
-    background: linear-gradient(135deg, #eff6ff, #dbeafe);
-    border-color: #3b82f6;
-    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+  gap: 6px;
+  padding: 10px 12px;
+  font-size: 11px;
+  cursor: pointer;
 }
 
 .radio-custom {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e2e8f0;
-  border-radius: 50%;
-  position: relative;
-  transition: all 0.3s ease;
+  width: 16px;
+  height: 16px;
 }
 
-.timesheet-simple-radio-option input[type="radio"]:checked + .radio-custom {
-  border-color: currentColor;
-  background: currentColor;
-}
-
-.timesheet-simple-radio-option input[type="radio"]:checked + .radio-custom::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
-  background: #fff;
-  border-radius: 50%;
-}
-
-.timesheet-simple-actions {
-  display: flex;
-  gap: 16px;
-  justify-content: flex-end;
-  padding-top: 20px;
-  border-top: 2px solid #f1f5f9;
-  margin-top: 20px;
-}
-
-.timesheet-simple-actions .timesheet-save-btn {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-}
-
-.timesheet-simple-actions .timesheet-save-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #16a34a, #15803d);
-  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
-}
-
-/* Responsive Design */
+/* Responsive Design - Enhanced */
 @media (max-width: 768px) {
     .timesheet-main-container {
-        padding: 12px;
+        padding: 10px;
+        gap: 16px;
+    }
+
+    .top-bar-container {
+        padding: 10px;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .breadcrumps-container h1 {
+        font-size: 16px !important;
+    }
+
+    .timesheet-header-actions {
+        gap: 8px;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .timesheet-add-btn {
+        padding: 8px 14px;
+        font-size: 11px;
+        border-radius: 8px;
+        flex: 1;
+    }
+
+    .timesheet-add-btn svg {
+        width: 14px;
+        height: 14px;
     }
 
     .timesheet-summary-cards {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .timesheet-summary-card {
+        padding: 14px 16px;
+        gap: 12px;
+    }
+
+    .timesheet-summary-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .timesheet-summary-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .timesheet-summary-label {
+        font-size: 11px;
+        margin-bottom: 6px;
+    }
+
+    .timesheet-summary-value {
+        font-size: 20px;
+    }
+
+    .timesheet-tabs {
+        padding: 6px;
+        gap: 3px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .timesheet-tab {
+        padding: 12px 14px;
+        font-size: 12px;
+        gap: 6px;
+        white-space: nowrap;
+        min-width: fit-content;
+    }
+
+    .timesheet-tab svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .timesheet-tab-content {
+        padding: 16px;
     }
 
     .timesheet-filters {
         grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 14px;
+        margin-bottom: 16px;
+    }
+
+    .timesheet-filter-group label {
+        font-size: 12px;
+    }
+
+    .timesheet-filter-group select,
+    .timesheet-filter-group input {
+        height: 38px;
+        font-size: 12px;
+        padding: 0 12px;
+    }
+
+    .timesheet-search-wrapper input {
+        padding-left: 40px;
+    }
+
+    .timesheet-search-wrapper svg {
+        left: 12px;
+    }
+
+    .timesheet-records-section {
+        margin-top: 16px;
+    }
+
+    .timesheet-records-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+    }
+
+    .timesheet-records-header h3 {
+        font-size: 16px;
+    }
+
+    .timesheet-records-actions {
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .timesheet-add-btn,
+    .timesheet-bulk-btn {
+        flex: 1;
+        padding: 8px 12px;
+        font-size: 11px;
+        justify-content: center;
     }
 
     .timesheet-records-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .timesheet-record-card {
+        padding: 14px;
+    }
+
+    .timesheet-record-employee h4 {
+        font-size: 14px;
+    }
+
+    .timesheet-record-employee p {
+        font-size: 12px;
+    }
+
+    .timesheet-edit-btn,
+    .timesheet-delete-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .timesheet-edit-btn svg,
+    .timesheet-delete-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .timesheet-record-status {
+        font-size: 12px;
+    }
+
+    .timesheet-record-status svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .timesheet-record-date,
+    .timesheet-record-time {
+        font-size: 11px;
+    }
+
+    .timesheet-record-date svg,
+    .timesheet-record-time svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .timesheet-record-notes {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+
+    .timesheet-report-controls {
+        padding: 14px;
+        gap: 14px;
+    }
+
+    .timesheet-report-type label {
+        font-size: 12px;
+    }
+
+    .timesheet-radio-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .timesheet-radio-option {
+        font-size: 12px;
+    }
+
+    .timesheet-radio-option input[type="radio"] {
+        width: 16px;
+        height: 16px;
+    }
+
+    .timesheet-report-dates {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .timesheet-date-group label {
+        font-size: 12px;
+    }
+
+    .timesheet-date-group input {
+        height: 38px;
+        font-size: 12px;
+    }
+
+    .timesheet-generate-btn {
+        padding: 10px 18px;
+        font-size: 12px;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .timesheet-report-results {
+        padding: 16px;
+    }
+
+    .timesheet-report-header {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+    }
+
+    .timesheet-report-header h3 {
+        font-size: 16px;
+    }
+
+    .timesheet-report-meta {
+        font-size: 12px;
+    }
+
+    .timesheet-report-summary {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .timesheet-summary-item {
+        padding: 10px 12px;
+    }
+
+    .timesheet-summary-item .label {
+        font-size: 12px;
+    }
+
+    .timesheet-summary-item .value {
+        font-size: 14px;
+    }
+
+    .timesheet-daily-records h4 {
+        font-size: 15px;
+        margin-bottom: 12px;
+    }
+
+    .timesheet-calendar-view {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+        gap: 10px;
+    }
+
+    .timesheet-day-card {
+        padding: 10px;
+    }
+
+    .timesheet-day-date {
+        font-size: 11px;
+    }
+
+    .timesheet-day-status {
+        font-size: 12px;
+    }
+
+    .timesheet-day-time {
+        font-size: 10px;
+    }
+
+    .timesheet-bulk-table {
+        font-size: 11px;
+    }
+
+    .timesheet-bulk-table th,
+    .timesheet-bulk-table td {
+        padding: 10px 12px;
+        font-size: 11px;
+    }
+
+    .timesheet-holidays-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .timesheet-holidays-header h3 {
+        font-size: 16px;
+    }
+
+    .timesheet-holidays-note {
+        padding: 12px;
+    }
+
+    .timesheet-holidays-note svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .timesheet-holidays-note p {
+        font-size: 12px;
+    }
+
+    .timesheet-holidays-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .timesheet-holiday-card {
+        padding: 14px;
+    }
+
+    .timesheet-holiday-header h4 {
+        font-size: 14px;
+    }
+
+    .timesheet-holiday-date {
+        font-size: 12px;
+    }
+
+    .timesheet-holiday-date svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .timesheet-holiday-type {
+        padding: 3px 10px;
+        font-size: 10px;
+    }
+
+    .timesheet-empty-state {
+        padding: 40px 16px;
+    }
+
+    .timesheet-empty-state svg {
+        width: 48px;
+        height: 48px;
+    }
+
+    .timesheet-empty-state h3 {
+        font-size: 16px;
+    }
+
+    .timesheet-empty-state p {
+        font-size: 12px;
+    }
+
+    .timesheet-modal-content {
+        max-width: 95vw;
+        width: 95vw;
+    }
+
+    .timesheet-modal-header {
+        padding: 14px 16px;
+    }
+
+    .timesheet-modal-header h3 {
+        font-size: 15px;
+    }
+
+    .timesheet-modal-close {
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+    }
+
+    .timesheet-form {
+        padding: 16px;
+        gap: 14px;
     }
 
     .timesheet-form-row {
         grid-template-columns: 1fr;
     }
 
-    .timesheet-tabs {
-        flex-direction: column;
+    .timesheet-form-group label {
+        font-size: 12px;
     }
 
-    .timesheet-report-dates {
-        grid-template-columns: 1fr;
+    .timesheet-form-group input,
+    .timesheet-form-group select,
+    .timesheet-form-group textarea {
+        height: 38px;
+        font-size: 12px;
+        padding: 0 12px;
     }
 
-    .timesheet-radio-group {
-        flex-direction: column;
-        gap: 12px;
+    .timesheet-form-group textarea {
+        padding: 10px 12px;
     }
 
-    .timesheet-calendar-view {
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    }
-
-    .timesheet-holidays-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .timesheet-simple-modal .timesheet-modal-content {
-  max-width: 95vw;
-  width: 95vw;
-}
-
-.timesheet-simple-date-section {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.timesheet-simple-header {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.timesheet-simple-quick-actions {
-  width: 100%;
-  justify-content: space-between;
-}
-
-.timesheet-simple-employee-card {
-  flex-direction: column;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.timesheet-simple-employee-info {
-  width: 100%;
-  justify-content: space-between;
-}
-
-.timesheet-simple-radio-group {
-  width: 100%;
-  justify-content: space-around;
-}
-
-.timesheet-simple-radio-option {
-  flex: 1;
-  min-width: auto;
-}
-
-.timesheet-simple-actions {
-  flex-direction: column;
-}
-
-.timesheet-simple-actions .timesheet-cancel-btn,
-.timesheet-simple-actions .timesheet-save-btn {
-  width: 100%;
-  justify-content: center;
-}
-}
-
-@media (max-width: 480px) {
     .timesheet-form-actions {
-        flex-direction: column;
+        margin-top: 16px;
+        padding-top: 14px;
+        gap: 10px;
     }
 
     .timesheet-cancel-btn,
     .timesheet-save-btn {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .timesheet-records-header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
-    }
-
-    .timesheet-holidays-header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
+        padding: 10px 18px;
+        font-size: 12px;
     }
 
     .timesheet-bulk-modal .timesheet-modal-content {
@@ -1727,15 +1926,33 @@
         width: 95vw;
     }
 
+    .timesheet-bulk-form {
+        padding: 16px;
+        gap: 16px;
+    }
+
     .timesheet-bulk-date-section {
         flex-direction: column;
         align-items: flex-start;
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .timesheet-bulk-info {
+        font-size: 13px;
+        padding: 6px 12px;
     }
 
     .timesheet-bulk-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 12px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        gap: 10px;
+    }
+
+    .timesheet-bulk-header h4 {
+        font-size: 15px;
     }
 
     .timesheet-bulk-quick-actions {
@@ -1745,45 +1962,191 @@
 
     .timesheet-quick-action-btn {
         flex: 1;
-        padding: 10px 12px;
+        padding: 8px 10px;
+        font-size: 10px;
+    }
+
+    .timesheet-bulk-employees-list {
+        max-height: 50vh;
+        gap: 12px;
+    }
+
+    .timesheet-bulk-employee-card {
+        padding: 14px;
+    }
+
+    .timesheet-bulk-employee-details h5 {
+        font-size: 14px;
+    }
+
+    .timesheet-bulk-employee-details p {
+        font-size: 12px;
+    }
+
+    .timesheet-bulk-employee-number {
+        width: 28px;
+        height: 28px;
         font-size: 11px;
     }
 
-    .timesheet-bulk-status-buttons {
-        flex-direction: column;
+    .timesheet-bulk-status-group label {
+        font-size: 12px;
+    }
+
+    .timesheet-status-btn {
+        padding: 8px 12px;
+        font-size: 11px;
+    }
+
+    .timesheet-status-btn svg {
+        width: 14px;
+        height: 14px;
     }
 
     .timesheet-bulk-time-group {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .timesheet-time-input label {
+        font-size: 11px;
+    }
+
+    .timesheet-time-input input {
+        height: 32px;
+        font-size: 12px;
+    }
+
+    .timesheet-bulk-notes-group label {
+        font-size: 11px;
+    }
+
+    .timesheet-bulk-notes-group input {
+        height: 32px;
+        font-size: 12px;
     }
 
     .timesheet-bulk-actions {
         flex-direction: column;
+        padding-top: 14px;
+        margin-top: 14px;
+        gap: 10px;
     }
 
     .timesheet-bulk-actions .timesheet-cancel-btn,
     .timesheet-bulk-actions .timesheet-save-btn {
         width: 100%;
         justify-content: center;
+        padding: 10px 18px;
+        font-size: 12px;
+    }
+
+    .timesheet-simple-modal .timesheet-modal-content {
+        max-width: 95vw;
+        width: 95vw;
     }
 
     .timesheet-simple-form {
-    padding: 16px;
-  }
+        padding: 14px;
+        gap: 16px;
+    }
 
-  .timesheet-simple-employee-card {
-    padding: 16px;
-  }
+    .timesheet-simple-date-section {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 12px;
+        gap: 10px;
+    }
 
-  .timesheet-simple-radio-option {
-    padding: 10px 12px;
-    font-size: 13px;
-    gap: 6px;
-  }
+    .timesheet-simple-info {
+        font-size: 13px;
+        padding: 6px 12px;
+    }
 
-  .timesheet-simple-employee-number {
-    width: 28px;
-    height: 28px;
-    font-size: 11px;
-  }
+    .timesheet-simple-header {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        gap: 10px;
+    }
+
+    .timesheet-simple-header h4 {
+        font-size: 15px;
+    }
+
+    .timesheet-simple-quick-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .timesheet-simple-employees-list {
+        max-height: 50vh;
+        gap: 12px;
+    }
+
+    .timesheet-simple-employee-card {
+        flex-direction: column;
+        padding: 14px;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .timesheet-simple-employee-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .timesheet-simple-employee-details h5 {
+        font-size: 14px;
+    }
+
+    .timesheet-simple-employee-details p {
+        font-size: 12px;
+    }
+
+    .timesheet-simple-radio-option {
+        padding: 8px 10px;
+        font-size: 10px;
+    }
+
+    .timesheet-simple-radio-option svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .radio-custom {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+    .timesheet-filter-group select,
+    .timesheet-filter-group input,
+    .timesheet-search-wrapper input {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    .timesheet-add-btn,
+    .timesheet-bulk-btn,
+    .timesheet-generate-btn {
+        min-height: 44px;
+    }
+
+    .timesheet-edit-btn,
+    .timesheet-delete-btn {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .timesheet-status-btn {
+        min-height: 40px;
+    }
+
+    .timesheet-simple-radio-option {
+        min-height: 44px;
+    }
 }

@@ -1019,32 +1019,87 @@
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .leads-main-container {
-    padding: 12px;
+    padding: 10px;
+  }
+
+  .leads-top-bar-container {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .leads-breadcrumps-container h1 {
+    font-size: 16px;
+  }
+
+  .leads-add-btn {
+    padding: 8px 14px;
+    font-size: 12px;
   }
 
   .leads-header {
-    padding: 16px;
+    padding: 14px;
     text-align: center;
+    flex-direction: column;
+    gap: 12px;
   }
 
-  .leads-header h1 {
-    font-size: 24px;
+  .leads-header-info h1 {
+    font-size: 18px;
+  }
+
+  .leads-header-info p {
+    font-size: 12px;
+  }
+
+  .leads-counts-display {
+    width: 100%;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .leads-count-card {
+    flex: 1;
+    min-width: 90px;
+    padding: 10px 12px;
+  }
+
+  .leads-count-number {
+    font-size: 18px;
+  }
+
+  .leads-count-label {
+    font-size: 10px;
   }
 
   .leads-filters {
-    padding: 16px;
+    padding: 12px;
+  }
+
+  .leads-search-container {
+    margin-bottom: 12px;
+  }
+
+  .leads-search-input {
+    padding: 10px 10px 10px 38px;
+    font-size: 12px;
+  }
+
+  .leads-search-icon {
+    width: 16px;
+    height: 16px;
+    left: 10px;
   }
 
   .leads-filter-row {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
   }
 
   .leads-date-filter-group {
     flex-direction: column;
     gap: 8px;
-    padding: 12px;
+    padding: 10px;
   }
 
   .leads-date-filter {
@@ -1054,43 +1109,124 @@
   .leads-date-input {
     width: 100%;
     min-width: auto;
+    font-size: 12px;
+    padding: 8px 8px 8px 26px;
+  }
+
+  .leads-calendar-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .leads-date-label {
+    font-size: 10px;
   }
 
   .leads-source-filter,
   .leads-sub-source-filter,
-  .leads-status-filter {
+  .leads-status-filter,
+  .leads-services-filter {
     width: 100%;
   }
 
   .leads-source-select,
   .leads-sub-source-select,
-  .leads-status-select {
-    width: 100%;
-    min-width: auto;
-  }
-
-  .leads-services-filter {
-    width: 100%;
-  }
-
+  .leads-status-select,
   .leads-services-select {
     width: 100%;
     min-width: auto;
+    font-size: 12px;
+    padding: 8px 10px;
   }
 
   .leads-clear-filters {
     width: 100%;
     justify-content: center;
-    padding: 14px 20px;
-    font-size: 15px;
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+
+  .leads-summary {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+    padding: 0 2px;
+  }
+
+  .leads-summary-info p {
+    font-size: 11px;
+  }
+
+  .leads-page-info {
+    font-size: 10px;
+    padding: 4px 8px;
   }
 
   .leads-table {
-    min-width: 1300px; /* Increased to accommodate created date column */
+    min-width: 1100px;
+  }
+
+  .leads-table th,
+  .leads-table td {
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+
+  .leads-customer-name {
+    font-size: 12px;
+  }
+
+  .leads-customer-email {
+    font-size: 10px;
+  }
+
+  .leads-phone {
+    font-size: 12px;
+  }
+
+  .leads-address {
+    font-size: 11px;
+  }
+
+  .leads-city-state {
+    font-size: 10px;
+  }
+
+  .leads-service-tag {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+
+  .leads-source {
+    font-size: 11px;
+  }
+
+  .leads-sub-source {
+    font-size: 10px;
+  }
+
+  .leads-followup-date {
+    font-size: 11px;
+  }
+
+  .leads-status-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    min-width: 70px;
+  }
+
+  .leads-edit-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .leads-edit-btn svg {
+    width: 14px;
+    height: 14px;
   }
 
   .leads-edit-modal {
-    padding: 10px;
+    padding: 8px;
   }
 
   .leads-edit-content {
@@ -1098,77 +1234,180 @@
   }
 
   .leads-edit-header {
-    padding: 16px 20px;
+    padding: 12px 16px;
+  }
+
+  .leads-edit-header h2 {
+    font-size: 16px;
+  }
+
+  .leads-edit-close-btn {
+    width: 30px;
+    height: 30px;
   }
 
   .leads-edit-form {
-    padding: 20px;
+    padding: 16px;
+    gap: 14px;
   }
 
   .leads-edit-form-row {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
   }
 
   .leads-edit-form-group {
     min-width: auto;
   }
 
+  .leads-edit-form-group label {
+    font-size: 12px;
+  }
+
+  .leads-form-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .leads-edit-form-group input,
+  .leads-edit-form-group select,
+  .leads-edit-form-group textarea {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
   .leads-edit-actions {
     flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+    padding-top: 14px;
   }
 
   .leads-save-btn,
   .leads-cancel-btn {
     width: 100%;
     justify-content: center;
+    padding: 10px 16px;
+    font-size: 12px;
   }
 
-  .leads-counts-display {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .leads-count-card {
-    flex: 1;
-    min-width: 100px;
-  }
-
-  .leads-summary {
-    flex-direction: column;
-    gap: 12px;
-    text-align: center;
+  .leads-btn-icon {
+    width: 14px;
+    height: 14px;
   }
 
   .leads-pagination {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .leads-pagination-info {
+    text-align: center;
+    font-size: 11px;
   }
 
   .leads-pagination-controls {
     flex-wrap: wrap;
     justify-content: center;
+    gap: 6px;
   }
 
   .leads-page-numbers {
-    margin: 0 8px;
+    margin: 0 6px;
   }
 
   .leads-page-btn {
-    font-size: 13px;
-    padding: 6px 12px;
+    font-size: 11px;
+    padding: 6px 10px;
   }
 
   .leads-page-number {
-    width: 36px;
-    height: 36px;
-    font-size: 13px;
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+  }
+
+  .leads-empty {
+    padding: 40px 16px;
+  }
+
+  .leads-empty-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+  }
+
+  .leads-empty h3 {
+    font-size: 16px;
+  }
+
+  .leads-empty p {
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+
+  .leads-empty-add-btn {
+    font-size: 12px;
+    padding: 10px 16px;
+  }
+
+  .leads-clear-filters-btn {
+    font-size: 12px;
+    padding: 10px 18px;
   }
 }
 
 @media (max-width: 480px) {
-  .leads-table {
-    min-width: 1100px; /* Adjusted for mobile */
+  .leads-main-container {
+    padding: 8px;
+  }
+
+  .leads-top-bar-container {
+    padding: 8px;
+  }
+
+  .leads-breadcrumps-container h1 {
+    font-size: 14px;
+  }
+
+  .leads-add-btn {
+    padding: 7px 12px;
+    font-size: 11px;
+  }
+
+  .leads-header {
+    padding: 12px;
+  }
+
+  .leads-header-info h1 {
+    font-size: 16px;
+  }
+
+  .leads-header-info p {
+    font-size: 11px;
+  }
+
+  .leads-count-card {
+    flex: 1 1 100%;
+    min-width: 100%;
+    padding: 8px 10px;
+  }
+
+  .leads-count-number {
+    font-size: 16px;
+  }
+
+  .leads-count-label {
+    font-size: 9px;
+  }
+
+  .leads-filters {
+    padding: 10px;
+  }
+
+  .leads-search-input {
+    padding: 8px 8px 8px 34px;
+    font-size: 11px;
   }
 
   .leads-filter-row {
@@ -1180,59 +1419,164 @@
   }
 
   .leads-date-input {
-    min-width: 120px;
-    font-size: 12px;
+    font-size: 11px;
     padding: 6px 6px 6px 24px;
-  }
-
-  .leads-calendar-icon {
-    width: 14px;
-    height: 14px;
-    left: 6px;
-  }
-
-  .leads-date-label {
-    font-size: 10px;
   }
 
   .leads-source-select,
   .leads-sub-source-select,
-  .leads-status-select {
-    font-size: 13px;
-    padding: 8px 10px;
-  }
-
+  .leads-status-select,
   .leads-services-select {
-    font-size: 13px;
-    padding: 8px 10px;
+    font-size: 11px;
+    padding: 7px 8px;
   }
 
   .leads-clear-filters {
-    padding: 12px 18px;
+    padding: 8px 14px;
+    font-size: 11px;
+  }
+
+  .leads-summary-info p {
+    font-size: 10px;
+  }
+
+  .leads-table {
+    min-width: 1000px;
+  }
+
+  .leads-table th,
+  .leads-table td {
+    padding: 8px 10px;
+    font-size: 10px;
+  }
+
+  .leads-customer-name {
+    font-size: 11px;
+  }
+
+  .leads-customer-email {
+    font-size: 9px;
+  }
+
+  .leads-phone {
+    font-size: 11px;
+  }
+
+  .leads-address {
+    font-size: 10px;
+  }
+
+  .leads-city-state {
+    font-size: 9px;
+  }
+
+  .leads-service-tag {
+    font-size: 8px;
+    padding: 2px 5px;
+  }
+
+  .leads-source {
+    font-size: 10px;
+  }
+
+  .leads-sub-source {
+    font-size: 9px;
+  }
+
+  .leads-followup-date {
+    font-size: 10px;
+  }
+
+  .leads-status-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    min-width: 60px;
+  }
+
+  .leads-edit-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .leads-edit-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .leads-edit-header h2 {
     font-size: 14px;
   }
 
-  .leads-clear-filters svg {
-    width: 16px;
-    height: 16px;
+  .leads-edit-form {
+    padding: 14px;
+    gap: 12px;
   }
 
-  .leads-counts-display {
-    flex-direction: column;
-    width: 100%;
+  .leads-edit-form-group label {
+    font-size: 11px;
   }
 
-  .leads-count-card {
-    width: 100%;
+  .leads-form-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .leads-edit-form-group input,
+  .leads-edit-form-group select,
+  .leads-edit-form-group textarea {
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+
+  .leads-save-btn,
+  .leads-cancel-btn {
+    padding: 8px 14px;
+    font-size: 11px;
+  }
+
+  .leads-pagination {
+    padding: 12px 14px;
+  }
+
+  .leads-pagination-info {
+    font-size: 10px;
   }
 
   .leads-pagination-controls {
-    flex-direction: column;
-    gap: 12px;
+    width: 100%;
   }
 
   .leads-page-numbers {
     order: -1;
+    margin-bottom: 8px;
+  }
+
+  .leads-page-btn {
+    flex: 1;
+    font-size: 10px;
+    padding: 6px 8px;
+  }
+
+  .leads-page-number {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+
+  .leads-empty {
+    padding: 30px 12px;
+  }
+
+  .leads-empty-icon {
+    font-size: 36px;
+  }
+
+  .leads-empty h3 {
+    font-size: 14px;
+  }
+
+  .leads-empty p {
+    font-size: 11px;
   }
 }
 
@@ -1242,12 +1586,18 @@
   .leads-source-select,
   .leads-sub-source-select,
   .leads-status-select,
-  .leads-services-select {
-    min-height: 44px;
-    font-size: 16px; /* Prevent zoom on iOS */
+  .leads-services-select,
+  .leads-search-input {
+    min-height: 40px;
+    font-size: 16px;
   }
 
   .leads-clear-filters {
-    min-height: 48px;
+    min-height: 44px;
+  }
+
+  .leads-edit-btn {
+    min-width: 40px;
+    min-height: 40px;
   }
 }
