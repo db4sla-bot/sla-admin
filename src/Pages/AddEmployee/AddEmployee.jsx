@@ -25,7 +25,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { saveEmployee } from "../../Scripts/EmployeeService";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, addDoc, collection } from "firebase/firestore";
-import { db } from "../../Firebase";
+import { db, auth } from "../../Firebase";
 import { MenuItemsData } from "../../SLAData";
 
 const AddEmployee = () => {
@@ -196,56 +196,132 @@ const AddEmployee = () => {
     setLoading(true);
 
     try {
-      // Save employee to Employees collection with username as doc id
+      // Step 1: Save employee to Employees collection first
       const employeeData = {
         ...formData,
         status,
         statusColor,
         maritalStatus: formData.maritalStatus,
-        access
+        access,
+        createdAt: new Date().toISOString(),
+        isActive: true
       };
 
       const docRef = await addDoc(collection(db, "Employees"), employeeData);
+      console.log("✅ Employee saved to database with ID:", docRef.id);
+
+      // Step 2: Create Firebase user account
+      toast.info('Creating user account...', { autoClose: 2000 });
+      
+      try {
+        const userCredential = await createUserWithEmailAndPassword(
+          auth, 
+          formData.username, 
+          formData.password
+        );
+        
+        const user = userCredential.user;
+        console.log("✅ Firebase user created successfully:", user.uid);
+        
+        // Update employee document with Firebase UID
+        await setDoc(doc(db, "Employees", docRef.id), {
+          ...employeeData,
+          firebaseUid: user.uid,
+          userCreated: true
+        });
+        
+        toast.success('User account created successfully!');
+        
+      } catch (authError) {
+        console.error("❌ Error creating Firebase user:", authError);
+        
+        // Handle specific Firebase auth errors
+        let errorMessage = 'Failed to create user account: ';
+        switch (authError.code) {
+          case 'auth/email-already-in-use':
+            errorMessage += 'Email is already registered in the system';
+            break;
+          case 'auth/weak-password':
+            errorMessage += 'Password should be at least 6 characters';
+            break;
+          case 'auth/invalid-email':
+            errorMessage += 'Invalid email address format';
+            break;
+          default:
+            errorMessage += authError.message;
+        }
+        
+        toast.error(errorMessage);
+        
+        // Update employee record to indicate user creation failed
+        await setDoc(doc(db, "Employees", docRef.id), {
+          ...employeeData,
+          userCreated: false,
+          userCreationError: authError.message
+        });
+        
+        // Don't return here - still send notification emails
+      }
+
+      // Step 3: Send emails regardless of user creation success/failure
+      toast.info('Sending welcome emails...', { autoClose: 2000 });
 
       // Send welcome email to employee
-      const welcomeSubject = "Welcome to SLA - Your Account Details";
+      const welcomeSubject = "🎉 Welcome to SLA - Your Account Details";
       const welcomeMessage = `
 Dear ${formData.name},
 
 Welcome to SLA! We're excited to have you join our team.
 
-Your account has been successfully created. Here are your login credentials:
+Your employee account has been successfully created. Here are your login credentials:
 
+✅ Account Details:
 Username: ${formData.email}
 Password: ${formData.password}
 Employee ID: ${formData.username}
-Department: ${formData.department}
+Department: ${formData.designation}
 Designation: ${formData.designation}
 
-Please keep these credentials secure and change your password after your first login for security purposes.
+🔐 Security Information:
+- Please keep these credentials secure and confidential
+- Change your password after your first login for enhanced security
+- Never share your login credentials with anyone
 
+📞 Need Help?
 For any questions or assistance, please contact the HR department.
+
+We look forward to working with you!
 
 Best regards,
 SLA Admin Team
       `.trim();
 
       // Send notification email to admin
-      const adminSubject = "New Employee Created - SLA Admin";
+      const adminSubject = "👤 New Employee Created - SLA Admin Notification";
       const adminMessage = `
-A new employee has been successfully added to the system.
+A new employee has been successfully added to the SLA system.
 
-Employee Details:
+📋 Employee Details:
 - Name: ${formData.name}
 - Email: ${formData.email}
 - Employee ID: ${formData.username}
 - Designation: ${formData.designation}
-- Department: ${formData.department}
 - Phone: ${formData.phone}
-- Joining Date: ${new Date(formData.joiningDate).toLocaleDateString('en-IN')}
 - Date Created: ${new Date().toLocaleDateString('en-IN')}
 
-The employee has been sent their login credentials via email.
+💼 Employment Information:
+- Status: ${status}
+- Bank: ${formData.bankName}
+- Qualification: ${formData.highestQualification}
+- Experience: ${formData.yearsExperience} years
+- Marital Status: ${formData.maritalStatus}
+
+🔐 Account Status:
+- Employee Record: ✅ Created Successfully
+- Firebase User Account: ${auth.currentUser ? '✅ Created Successfully' : '❌ Creation Failed'}
+- Login Credentials: Sent to employee via email
+
+The employee has been notified via email with their login credentials.
 
 Best regards,
 SLA System
@@ -257,19 +333,26 @@ SLA System
         sendEmail('db4sla@gmail.com', adminSubject, adminMessage)
       ]).then(([employeeEmailSent, adminEmailSent]) => {
         if (employeeEmailSent) {
-          toast.success('Welcome email sent to employee!');
+          toast.success('📧 Welcome email sent to employee!');
+          console.log('✅ Welcome email sent to employee successfully');
         } else {
-          toast.warning('Employee created but welcome email failed to send');
+          toast.warning('⚠️ Employee created but welcome email failed to send');
+          console.log('❌ Failed to send welcome email to employee');
         }
 
         if (adminEmailSent) {
-          console.log('Notification email sent to admin successfully');
+          toast.success('📧 Admin notification sent!');
+          console.log('✅ Notification email sent to admin successfully');
         } else {
-          console.log('Failed to send notification email to admin');
+          console.log('❌ Failed to send notification email to admin');
         }
+      }).catch(emailError => {
+        console.error('❌ Error in email sending process:', emailError);
+        toast.warning('Employee created but some emails failed to send');
       });
 
-      toast.success(`✅ Employee saved and user created 🎉 (Username: ${formData.username})`);
+      // Show main success message
+      toast.success(`✅ Employee "${formData.name}" added successfully! 🎉`);
 
       // Reset form
       setFormData({
@@ -293,7 +376,7 @@ SLA System
         passedOutYear: "",
         yearsExperience: "",
         maritalStatus: "",
-        aadharNumber: "", // Reset Aadhar number
+        aadharNumber: "",
       });
       setStatus("Select the Status");
       setStatusColor("#3454d1");
@@ -301,7 +384,8 @@ SLA System
       setAccess([]);
 
     } catch (err) {
-      toast.error(`Error: ${err.message}`);
+      console.error("❌ Error in employee creation process:", err);
+      toast.error(`❌ Error: ${err.message}`);
     }
 
     setLoading(false);
