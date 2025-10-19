@@ -8,6 +8,7 @@ const ContextData = createContext();
 
 export const ContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -25,15 +26,18 @@ export const ContextProvider = ({ children }) => {
       if (docSnap.exists()) {
         const employeeData = docSnap.data();
         setUserDetails(employeeData);
+        setIsAdmin(false); // Employee exists, so not admin
         return employeeData;
       } else {
         console.log("No employee document found with email:", email);
         setUserDetails(null);
+        setIsAdmin(true); // No employee document, so is admin
         return null;
       }
     } catch (error) {
       console.error("Error fetching user details:", error);
       setUserDetails(null);
+      setIsAdmin(true); // On error, default to admin
       return null;
     } finally {
       setUserDetailsLoading(false);
@@ -52,6 +56,7 @@ export const ContextProvider = ({ children }) => {
       } else {
         // Clear user details when user logs out
         setUserDetails(null);
+        setIsAdmin(false);
       }
       
       setLoading(false);
@@ -67,10 +72,14 @@ export const ContextProvider = ({ children }) => {
     return null;
   };
 
+  console.log("User Details:", userDetails);
+  console.log("Is Admin:", isAdmin);
+
   return (
     <ContextData.Provider value={{ 
       user, 
       userDetails, 
+      isAdmin,
       isAuthenticated, 
       loading, 
       userDetailsLoading,
