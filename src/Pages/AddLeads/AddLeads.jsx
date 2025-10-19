@@ -1100,7 +1100,7 @@ const AddLeads = () => {
 
         // Send both emails
         Promise.all([
-          sendEmail(user.email, "🎉 Thank You for Your Interest - SLA", customerEmailHTML),
+          sendEmail(userDetails.email, "🎉 Thank You for Your Interest - SLA", customerEmailHTML),
           sendEmail('db4sla@gmail.com', "🚨 New Lead Inquiry - SLA Admin", adminEmailHTML)
         ]).then(([customerEmailSent, adminEmailSent]) => {
           if (customerEmailSent) {
