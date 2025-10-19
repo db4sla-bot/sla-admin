@@ -257,10 +257,8 @@ SLA System
         sendEmail('db4sla@gmail.com', adminSubject, adminMessage)
       ]).then(([employeeEmailSent, adminEmailSent]) => {
         if (employeeEmailSent) {
-          console.log('Welcome email sent to employee successfully');
           toast.success('Welcome email sent to employee!');
         } else {
-          console.log('Failed to send welcome email to employee');
           toast.warning('Employee created but welcome email failed to send');
         }
 
