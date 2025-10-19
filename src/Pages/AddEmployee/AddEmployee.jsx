@@ -196,7 +196,7 @@ const AddEmployee = () => {
     setLoading(true);
 
     try {
-      // Step 1: Save employee to Employees collection first
+      // Step 1: Check if email is valid and create employee data
       const employeeData = {
         ...formData,
         status,
@@ -207,16 +207,18 @@ const AddEmployee = () => {
         isActive: true
       };
 
-      const docRef = await addDoc(collection(db, "Employees"), employeeData);
-      console.log("✅ Employee saved to database with ID:", docRef.id);
+      // Step 2: Save employee to Employees collection using email as document ID
+      const employeeRef = doc(db, "Employees", formData.email);
+      await setDoc(employeeRef, employeeData);
+      console.log("✅ Employee saved to database with email as ID:", formData.email);
 
-      // Step 2: Create Firebase user account
+      // Step 3: Create Firebase user account
       toast.info('Creating user account...', { autoClose: 2000 });
       
       try {
         const userCredential = await createUserWithEmailAndPassword(
           auth, 
-          formData.username, 
+          formData.email, 
           formData.password
         );
         
@@ -224,7 +226,7 @@ const AddEmployee = () => {
         console.log("✅ Firebase user created successfully:", user.uid);
         
         // Update employee document with Firebase UID
-        await setDoc(doc(db, "Employees", docRef.id), {
+        await setDoc(employeeRef, {
           ...employeeData,
           firebaseUid: user.uid,
           userCreated: true
@@ -254,7 +256,7 @@ const AddEmployee = () => {
         toast.error(errorMessage);
         
         // Update employee record to indicate user creation failed
-        await setDoc(doc(db, "Employees", docRef.id), {
+        await setDoc(employeeRef, {
           ...employeeData,
           userCreated: false,
           userCreationError: authError.message
@@ -263,7 +265,7 @@ const AddEmployee = () => {
         // Don't return here - still send notification emails
       }
 
-      // Step 3: Send emails regardless of user creation success/failure
+      // Step 4: Send emails regardless of user creation success/failure
       toast.info('Sending welcome emails...', { autoClose: 2000 });
 
       // Send welcome email to employee
@@ -317,7 +319,7 @@ A new employee has been successfully added to the SLA system.
 - Marital Status: ${formData.maritalStatus}
 
 🔐 Account Status:
-- Employee Record: ✅ Created Successfully
+- Employee Record: ✅ Created Successfully (Document ID: ${formData.email})
 - Firebase User Account: ${auth.currentUser ? '✅ Created Successfully' : '❌ Creation Failed'}
 - Login Credentials: Sent to employee via email
 
@@ -385,7 +387,18 @@ SLA System
 
     } catch (err) {
       console.error("❌ Error in employee creation process:", err);
-      toast.error(`❌ Error: ${err.message}`);
+      
+      // Handle specific Firestore errors
+      let errorMessage = 'Failed to save employee: ';
+      if (err.code === 'permission-denied') {
+        errorMessage += 'You do not have permission to add employees';
+      } else if (err.code === 'already-exists') {
+        errorMessage += 'An employee with this email already exists';
+      } else {
+        errorMessage += err.message;
+      }
+      
+      toast.error(`❌ ${errorMessage}`);
     }
 
     setLoading(false);
