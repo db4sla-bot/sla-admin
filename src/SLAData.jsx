@@ -2,34 +2,34 @@ import { BellRing, BriefcaseBusiness, CalendarDays, Cast, Chrome, ClipboardClock
 
 export const MenuItemsData = [
     {
-        reports: {
-            id: 'reports',
-            label: 'Reports',
-            icon: <Cast className="icon" />,
-            link: false,
-            subItems: [
-                {
-                    id: 'customersreport',
-                    label: 'Customers Report',
-                    link: '/customersreport'
-                },
-                {
-                    id: 'materialreport',
-                    label: 'Materials Report',
-                    link: '/materialsreport'
-                },
-                {
-                    id: 'leadsreport',
-                    label: 'Leads Report',
-                    link: '/leadsreport'
-                },
-                {
-                    id: 'timesheetreport',
-                    label: 'Timesheet Report',
-                    link: '/timesheetreport'
-                },
-            ]
-        },
+        // reports: {
+        //     id: 'reports',
+        //     label: 'Reports',
+        //     icon: <Cast className="icon" />,
+        //     link: false,
+        //     subItems: [
+        //         {
+        //             id: 'customersreport',
+        //             label: 'Customers Report',
+        //             link: '/customersreport'
+        //         },
+        //         {
+        //             id: 'materialreport',
+        //             label: 'Materials Report',
+        //             link: '/materialsreport'
+        //         },
+        //         {
+        //             id: 'leadsreport',
+        //             label: 'Leads Report',
+        //             link: '/leadsreport'
+        //         },
+        //         {
+        //             id: 'timesheetreport',
+        //             label: 'Timesheet Report',
+        //             link: '/timesheetreport'
+        //         },
+        //     ]
+        // },
         investments: {
             id: 'investments',
             label: 'Investments',

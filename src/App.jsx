@@ -170,12 +170,12 @@ const App = () => {
                       </NavLink>
                     </div>
 
-                    <div className="dashboard-menu-con">
+                    {/* <div className="dashboard-menu-con">
                       <NavLink className="dashboard-menu-item" to="/projects" onClick={handleMenuLinkClick}>
                         <FolderOpenDot className="id-icon" /> Projects{' '}
                         <ChevronRight className="icon-arrow" />
                       </NavLink>
-                    </div>
+                    </div> */}
                     </>
                   ) : (<></>)
                 }
