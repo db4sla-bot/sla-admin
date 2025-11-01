@@ -329,3 +329,64 @@ export const LeadServices = [
         icon: false
     },
 ]
+
+// Route Access Mapping - maps routes to required access permissions
+export const RouteAccessMapping = {
+    // Dashboard is accessible to all
+    '/': null,
+    
+    // Customers routes
+    '/customers': 'customers',
+    '/addcustomer': 'customers',
+    '/customers/*': 'customers',
+    
+    // Leads routes
+    '/leads': 'leads',
+    '/addleads': 'leads',
+    
+    // Materials routes
+    '/materials': 'materials',
+    '/addmaterial': 'materials',
+    
+    // Timesheet routes
+    '/updatetimesheet': 'timesheet',
+    
+    // Appointments routes
+    '/appointments': 'appointments',
+    '/addappointment': 'appointments',
+    
+    // Employees routes
+    '/employees': 'employees',
+    '/addemployee': 'employees',
+    '/employees/*': 'employees',
+    
+    // Billing routes
+    '/payments': 'payments',
+    '/invoices': 'payments',
+    '/addinvoice': 'payments',
+    '/invoices/*': 'payments',
+    '/addquotation': 'payments',
+    '/quotations': 'payments',
+    '/editquotation/*': 'payments',
+    
+    // Investments routes
+    '/materialsinvestment': 'investments',
+    '/assetinvestment': 'investments',
+    '/payroll': 'investments',
+    
+    // Applications routes
+    '/dailyexpenses': 'applications',
+    '/monthlyexpenses': 'applications',
+    '/todolist': 'applications',
+    '/passwords': 'applications',
+    '/qrcodegenerator': 'applications',
+    
+    // Projects route
+    '/projects': null, // Accessible to all logged-in users
+    
+    // Reports routes (currently commented out in menu, but keeping for future)
+    '/customersreport': 'customers',
+    '/materialsreport': 'materials',
+    '/leadsreport': 'leads',
+    '/timesheetreport': 'timesheet'
+}

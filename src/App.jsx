@@ -60,6 +60,8 @@ import PWAUpdateNotification from './Components/PWAUpdateNotification/PWAUpdateN
 import MonthlyExpenses from './Pages/MonthlyExpenses/MonthlyExpenses'
 import PWAUpdater from './Components/PWAUpdater/PWAUpdater'
 import AssetInvestment from './Pages/AssetInvestment/AssetInvestment'
+import AccessControlRoute from './AccessControlRoute'
+import AccessDenied from './Pages/AccessDenied/AccessDenied'
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -233,40 +235,176 @@ const App = () => {
             {/* Main Content */}
             <div className="main-region">
               <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/customersreport" element={<CustomersReport />} />
-                <Route path="/timesheetreport" element={<TimesheetReport />} />
-                <Route path="/leadsreport" element={<LeadsReport />} />
-                <Route path="/materialsreport" element={<MaterialsReport />} />
-                <Route path="/leads" element={<Leads />} />
-                <Route path="/addleads" element={<AddLeads />} />
-                <Route path="/employees" element={<Employees />} />
-                <Route path="/employees/:employeeId"element={<EmployeeDetails />}/>
-                <Route path="/addemployee" element={<AddEmployee />} />
-                <Route path="/addmaterial" element={<AddMaterial />} />
-                <Route path="/materials" element={<Materials />} />
-                <Route path="/updatetimesheet" element={<UpdateTimeSheet />} />
-                <Route path="/addcustomer" element={<AddCustomer />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/customers/:customerid"element={<CustomerDetails />}/>
-                <Route path="/invoices" element={<Invoices />} />
-                <Route path="/addinvoice" element={<AddInvoice />} />
-                <Route path="/invoices/:invoiceid"element={<InvoiceDetails />}/>
-                <Route path="/quotations" element={<Quotations />} />
-                <Route path="/addquotation" element={<AddQuotation />} />
-                <Route path="/editquotation/:id" element={<EditQuotation />} />
-                <Route path="/qrcodegenerator" element={<QRCodeGenerator />} />
-                <Route path="/todolist" element={<ToDoList />} />
-                <Route path="/passwords" element={<Passwords />} />
-                <Route path="/dailyexpenses" element={<DailyExpenses />} />
-                <Route path="/monthlyexpenses" element={<MonthlyExpenses />} />
-                <Route path="/materialsinvestment" element={<MaterialsInvestment />} />
-                <Route path="/payroll" element={<Payroll />} />
-                <Route path="/payments" element={<Payments />} />
-                <Route path="/appointments" element={<Appointments />} />
-                <Route path="/addappointment" element={<AddAppointment />} />
-                <Route path="/projects" element={<Projects />} />
-                <Route path="/assetinvestment" element={<AssetInvestment />} />
+                <Route path="/" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Dashboard />
+                  </AccessControlRoute>
+                } />
+                <Route path="/customersreport" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <CustomersReport />
+                  </AccessControlRoute>
+                } />
+                <Route path="/timesheetreport" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <TimesheetReport />
+                  </AccessControlRoute>
+                } />
+                <Route path="/leadsreport" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <LeadsReport />
+                  </AccessControlRoute>
+                } />
+                <Route path="/materialsreport" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <MaterialsReport />
+                  </AccessControlRoute>
+                } />
+                <Route path="/leads" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Leads />
+                  </AccessControlRoute>
+                } />
+                <Route path="/addleads" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <AddLeads />
+                  </AccessControlRoute>
+                } />
+                <Route path="/employees" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Employees />
+                  </AccessControlRoute>
+                } />
+                <Route path="/employees/:employeeId" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <EmployeeDetails />
+                  </AccessControlRoute>
+                }/>
+                <Route path="/addemployee" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <AddEmployee />
+                  </AccessControlRoute>
+                } />
+                <Route path="/addmaterial" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <AddMaterial />
+                  </AccessControlRoute>
+                } />
+                <Route path="/materials" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Materials />
+                  </AccessControlRoute>
+                } />
+                <Route path="/updatetimesheet" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <UpdateTimeSheet />
+                  </AccessControlRoute>
+                } />
+                <Route path="/addcustomer" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <AddCustomer />
+                  </AccessControlRoute>
+                } />
+                <Route path="/customers" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Customers />
+                  </AccessControlRoute>
+                } />
+                <Route path="/customers/:customerid" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <CustomerDetails />
+                  </AccessControlRoute>
+                }/>
+                <Route path="/invoices" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Invoices />
+                  </AccessControlRoute>
+                } />
+                <Route path="/addinvoice" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <AddInvoice />
+                  </AccessControlRoute>
+                } />
+                <Route path="/invoices/:invoiceid" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <InvoiceDetails />
+                  </AccessControlRoute>
+                }/>
+                <Route path="/quotations" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Quotations />
+                  </AccessControlRoute>
+                } />
+                <Route path="/addquotation" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <AddQuotation />
+                  </AccessControlRoute>
+                } />
+                <Route path="/editquotation/:id" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <EditQuotation />
+                  </AccessControlRoute>
+                } />
+                <Route path="/qrcodegenerator" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <QRCodeGenerator />
+                  </AccessControlRoute>
+                } />
+                <Route path="/todolist" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <ToDoList />
+                  </AccessControlRoute>
+                } />
+                <Route path="/passwords" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Passwords />
+                  </AccessControlRoute>
+                } />
+                <Route path="/dailyexpenses" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <DailyExpenses />
+                  </AccessControlRoute>
+                } />
+                <Route path="/monthlyexpenses" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <MonthlyExpenses />
+                  </AccessControlRoute>
+                } />
+                <Route path="/materialsinvestment" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <MaterialsInvestment />
+                  </AccessControlRoute>
+                } />
+                <Route path="/payroll" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Payroll />
+                  </AccessControlRoute>
+                } />
+                <Route path="/payments" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Payments />
+                  </AccessControlRoute>
+                } />
+                <Route path="/appointments" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Appointments />
+                  </AccessControlRoute>
+                } />
+                <Route path="/addappointment" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <AddAppointment />
+                  </AccessControlRoute>
+                } />
+                <Route path="/projects" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <Projects />
+                  </AccessControlRoute>
+                } />
+                <Route path="/assetinvestment" element={
+                  <AccessControlRoute userAccess={userAccess}>
+                    <AssetInvestment />
+                  </AccessControlRoute>
+                } />
               </Routes>
             </div>
           </div>
