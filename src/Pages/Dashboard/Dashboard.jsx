@@ -440,153 +440,179 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-main">
-        {/* Financial Overview Cards */}
-        <div className="dashboard-financial-cards">
-          <div className="dashboard-financial-card revenue">
-            <div className="dashboard-financial-card-icon">
-              <TrendingUp size={32} />
-            </div>
-            <div className="dashboard-financial-card-content">
-              <h3>Total Revenue</h3>
-              <div className="dashboard-financial-card-value">₹{financials.revenue.toLocaleString()}</div>
-              <div className={`dashboard-financial-card-trend ${financials.revenueGrowth >= 0 ? 'positive' : 'negative'}`}>
-                {financials.revenueGrowth >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                {financials.revenueGrowth >= 0 ? '+' : ''}{financials.revenueGrowth.toFixed(1)}% vs last period
+        {/* Financial Overview - New Layout */}
+        <div className="dashboard-financial-overview">
+          {/* Top Row - Key Metrics */}
+          <div className="dashboard-key-metrics">
+            <div className="dashboard-metric-card revenue">
+              <div className="dashboard-metric-header">
+                <div className="dashboard-metric-icon">
+                  <TrendingUp size={28} />
+                </div>
+                <div className="dashboard-metric-info">
+                  <h3>Total Revenue</h3>
+                  <div className="dashboard-metric-value">₹{financials.revenue.toLocaleString()}</div>
+                </div>
+              </div>
+              <div className={`dashboard-metric-trend ${financials.revenueGrowth >= 0 ? 'positive' : 'negative'}`}>
+                {financials.revenueGrowth >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                <span>{financials.revenueGrowth >= 0 ? '+' : ''}{financials.revenueGrowth.toFixed(1)}% vs last period</span>
               </div>
             </div>
-          </div>
 
-          <div className="dashboard-financial-card expenses">
-            <div className="dashboard-financial-card-icon">
-              <TrendingDown size={32} />
-            </div>
-            <div className="dashboard-financial-card-content">
-              <h3>Total Expenses</h3>
-              <div className="dashboard-financial-card-value">₹{financials.expenses.toLocaleString()}</div>
-              <div className="dashboard-financial-card-breakdown w-100">
-                <div className="dashboard-expense-item">
-                  <span className="dashboard-expense-label">💼 Payroll:</span>
-                  <span className="dashboard-expense-amount">₹{financials.payrollExpenses.toLocaleString()}</span>
+            <div className={`dashboard-metric-card profit ${financials.profit >= 0 ? 'positive' : 'negative'}`}>
+              <div className="dashboard-metric-header">
+                <div className="dashboard-metric-icon">
+                  {financials.profit >= 0 ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
                 </div>
-                <div className="dashboard-expense-item">
-                  <span className="dashboard-expense-label">📦 Materials:</span>
-                  <span className="dashboard-expense-amount">₹{financials.materialExpenses.toLocaleString()}</span>
-                </div>
-                <div className="dashboard-expense-item">
-                  <span className="dashboard-expense-label">💰 Daily Expenses:</span>
-                  <span className="dashboard-expense-amount">₹{financials.dailyExpensesAmount.toLocaleString()}</span>
-                </div>
-                <div className="dashboard-expense-item">
-                  <span className="dashboard-expense-label">📅 Monthly Expenses:</span>
-                  <span className="dashboard-expense-amount">₹{financials.monthlyExpensesAmount.toLocaleString()}</span>
-                </div>
-                <div className="dashboard-expense-item">
-                  <span className="dashboard-expense-label">🏢 Assets:</span>
-                  <span className="dashboard-expense-amount">₹{financials.assetInvestmentAmount.toLocaleString()}</span>
+                <div className="dashboard-metric-info">
+                  <h3>{financials.profit >= 0 ? 'Net Profit' : 'Net Loss'}</h3>
+                  <div className="dashboard-metric-value">₹{Math.abs(financials.profit).toLocaleString()}</div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className={`dashboard-financial-card profit ${financials.profit >= 0 ? 'positive' : 'negative'}`}>
-            <div className="dashboard-financial-card-icon">
-              {financials.profit >= 0 ? <TrendingUp size={32} /> : <TrendingDown size={32} />}
-            </div>
-            <div className="dashboard-financial-card-content">
-              <h3>{financials.profit >= 0 ? 'Net Profit' : 'Net Loss'}</h3>
-              <div className="dashboard-financial-card-value">
-                ₹{Math.abs(financials.profit).toLocaleString()}
-              </div>
-              <div className={`dashboard-financial-card-trend ${financials.profit >= 0 ? 'positive' : 'negative'}`}>
-                {financials.profit >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                <span className="dashboard-profit-percentage">
+              <div className={`dashboard-metric-trend ${financials.profit >= 0 ? 'positive' : 'negative'}`}>
+                <span className="dashboard-profit-margin">
                   {Math.abs(financials.profitMargin).toFixed(1)}% {financials.profit >= 0 ? 'profit' : 'loss'} margin
                 </span>
               </div>
               <div className="dashboard-profit-status">
                 {financials.profit >= 0 ? (
-                  <div className="dashboard-profit-indicator positive">
-                    ✅ Business is Profitable
-                  </div>
+                  <span className="dashboard-status-badge positive">✅ Profitable</span>
                 ) : (
-                  <div className="dashboard-profit-indicator negative">
-                    ⚠️ Business in Loss ({Math.abs(financials.profitMargin).toFixed(1)}%)
-                  </div>
+                  <span className="dashboard-status-badge negative">⚠️ In Loss</span>
                 )}
+              </div>
+            </div>
+
+            <div className="dashboard-metric-card customers">
+              <div className="dashboard-metric-header">
+                <div className="dashboard-metric-icon">
+                  <Users size={28} />
+                </div>
+                <div className="dashboard-metric-info">
+                  <h3>Total Customers</h3>
+                  <div className="dashboard-metric-value">{dashboardData.customers.length}</div>
+                </div>
+              </div>
+              <div className="dashboard-metric-trend neutral">
+                <span>{topCustomers.length} active this period</span>
+              </div>
+            </div>
+
+            <div className="dashboard-metric-card materials">
+              <div className="dashboard-metric-header">
+                <div className="dashboard-metric-icon">
+                  <Package size={28} />
+                </div>
+                <div className="dashboard-metric-info">
+                  <h3>Materials</h3>
+                  <div className="dashboard-metric-value">{materialsStatus.total}</div>
+                </div>
+              </div>
+              <div className="dashboard-metric-trend warning">
+                <span>{materialsStatus.lowStock} low stock alerts</span>
               </div>
             </div>
           </div>
 
-          <div className="dashboard-financial-card investment">
-            <div className="dashboard-financial-card-icon">
-              <Wallet size={32} />
-            </div>
-            <div className="dashboard-financial-card-content">
-              <h3>Material Investment</h3>
-              <div className="dashboard-financial-card-value">
-                ₹{financials.materialExpenses.toLocaleString()}
+          {/* Bottom Row - Expenses Breakdown */}
+          <div className="dashboard-expenses-section">
+            <div className="dashboard-expenses-card">
+              <div className="dashboard-expenses-header">
+                <div className="dashboard-expenses-title">
+                  <TrendingDown size={24} />
+                  <h3>Total Expenses - ₹{financials.expenses.toLocaleString()}</h3>
+                </div>
+                <div className={`dashboard-expenses-trend ${financials.expenseGrowth >= 0 ? 'negative' : 'positive'}`}>
+                  {financials.expenseGrowth >= 0 ? '+' : ''}{financials.expenseGrowth.toFixed(1)}% vs last period
+                </div>
               </div>
-              <div className="dashboard-financial-card-trend neutral">
-                <Package size={16} />
-                {filteredData.materialsInvestment?.length || 0} investments made
+              <div className="dashboard-expenses-breakdown">
+                <div className="dashboard-expense-item">
+                  <div className="dashboard-expense-info">
+                    <span className="dashboard-expense-icon">💼</span>
+                    <span className="dashboard-expense-label">Payroll</span>
+                  </div>
+                  <span className="dashboard-expense-amount">₹{financials.payrollExpenses.toLocaleString()}</span>
+                </div>
+                <div className="dashboard-expense-item">
+                  <div className="dashboard-expense-info">
+                    <span className="dashboard-expense-icon">📦</span>
+                    <span className="dashboard-expense-label">Materials</span>
+                  </div>
+                  <span className="dashboard-expense-amount">₹{financials.materialExpenses.toLocaleString()}</span>
+                </div>
+                <div className="dashboard-expense-item">
+                  <div className="dashboard-expense-info">
+                    <span className="dashboard-expense-icon">💰</span>
+                    <span className="dashboard-expense-label">Daily Expenses</span>
+                  </div>
+                  <span className="dashboard-expense-amount">₹{financials.dailyExpensesAmount.toLocaleString()}</span>
+                </div>
+                <div className="dashboard-expense-item">
+                  <div className="dashboard-expense-info">
+                    <span className="dashboard-expense-icon">📅</span>
+                    <span className="dashboard-expense-label">Monthly Expenses</span>
+                  </div>
+                  <span className="dashboard-expense-amount">₹{financials.monthlyExpensesAmount.toLocaleString()}</span>
+                </div>
+                <div className="dashboard-expense-item">
+                  <div className="dashboard-expense-info">
+                    <span className="dashboard-expense-icon">🏢</span>
+                    <span className="dashboard-expense-label">Assets</span>
+                  </div>
+                  <span className="dashboard-expense-amount">₹{financials.assetInvestmentAmount.toLocaleString()}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Business Metrics Cards */}
-        <div className="dashboard-metrics-grid">
-          <div className="dashboard-metric-card">
-            <div className="dashboard-metric-icon customers">
-              <Users size={24} />
+        {/* Additional Metrics Row */}
+        <div className="dashboard-additional-metrics">
+          <div className="dashboard-quick-metric">
+            <div className="dashboard-quick-metric-icon">
+              <CreditCard size={20} />
             </div>
-            <div className="dashboard-metric-content">
-              <div className="dashboard-metric-value">{dashboardData.customers.length}</div>
-              <div className="dashboard-metric-label">Total Customers</div>
-              <div className="dashboard-metric-sub">
-                {topCustomers.length} active this period
-              </div>
+            <div className="dashboard-quick-metric-content">
+              <div className="dashboard-quick-metric-value">{filteredData.payments?.length || 0}</div>
+              <div className="dashboard-quick-metric-label">Payments Received</div>
             </div>
           </div>
 
-          <div className="dashboard-metric-card">
-            <div className="dashboard-metric-icon payments">
-              <CreditCard size={24} />
+          <div className="dashboard-quick-metric">
+            <div className="dashboard-quick-metric-icon">
+              <UserPlus size={20} />
             </div>
-            <div className="dashboard-metric-content">
-              <div className="dashboard-metric-value">{filteredData.payments?.length || 0}</div>
-              <div className="dashboard-metric-label">Payments Received</div>
-              <div className="dashboard-metric-sub">
-                ₹{(financials.revenue / (filteredData.payments?.length || 1)).toLocaleString()} avg
-              </div>
-            </div>
-          </div>
-
-          <div className="dashboard-metric-card">
-            <div className="dashboard-metric-icon materials">
-              <Package size={24} />
-            </div>
-            <div className="dashboard-metric-content">
-              <div className="dashboard-metric-value">{dashboardData.materials.length}</div>
-              <div className="dashboard-metric-label">Materials in Stock</div>
-              <div className="dashboard-metric-sub">
-                {materialsStatus.lowStock} low stock items
-              </div>
-            </div>
-          </div>
-
-          <div className="dashboard-metric-card">
-            <div className="dashboard-metric-icon employees">
-              <UserPlus size={24} />
-            </div>
-            <div className="dashboard-metric-content">
-              <div className="dashboard-metric-value">
+            <div className="dashboard-quick-metric-content">
+              <div className="dashboard-quick-metric-value">
                 {new Set(filteredData.payroll?.map(p => p.employeeId)).size || 0}
               </div>
-              <div className="dashboard-metric-label">Employees Paid</div>
-              <div className="dashboard-metric-sub">
-                ₹{filteredData.payroll?.length > 0 ? (filteredData.payroll.reduce((sum, p) => sum + (p.netSalary || 0), 0) / filteredData.payroll.length).toLocaleString() : '0'} avg salary
+              <div className="dashboard-quick-metric-label">Employees Paid</div>
+            </div>
+          </div>
+
+          <div className="dashboard-quick-metric">
+            <div className="dashboard-quick-metric-icon">
+              <IndianRupee size={20} />
+            </div>
+            <div className="dashboard-quick-metric-content">
+              <div className="dashboard-quick-metric-value">
+                ₹{(financials.revenue / (filteredData.payments?.length || 1)).toLocaleString()}
               </div>
+              <div className="dashboard-quick-metric-label">Avg Payment</div>
+            </div>
+          </div>
+
+          <div className="dashboard-quick-metric">
+            <div className="dashboard-quick-metric-icon">
+              <Activity size={20} />
+            </div>
+            <div className="dashboard-quick-metric-content">
+              <div className="dashboard-quick-metric-value">
+                {materialsStatus.lowStock}
+              </div>
+              <div className="dashboard-quick-metric-label">Low Stock Alerts</div>
             </div>
           </div>
         </div>
