@@ -372,6 +372,8 @@ const CustomerDetails = () => {
   };
 
   // Payment handlers
+  // NOTE: This creates a payment RECORD (not actual payment received)
+  // Only installments (actual money received) are tracked in Dashboard revenue
   const handleSavePayment = async () => {
     if (!paymentForm.workId || !paymentForm.totalAmount) {
       toast.error('Please select work and enter total amount');
@@ -459,11 +461,36 @@ const CustomerDetails = () => {
         return p;
       });
       
+      // Update customer document
       const customerRef = doc(db, 'Customers', customerId);
       await updateDoc(customerRef, {
         payments: updatedPayments,
         updatedAt: new Date().toISOString()
       });
+
+      // IMPORTANT: Add to global Payments collection for Dashboard revenue tracking
+      // This tracks actual money received (installments), not payment records
+      try {
+        await addDoc(collection(db, 'Payments'), {
+          customerId: customerId,
+          customerName: customer?.name || 'Unknown Customer',
+          workId: payment.workId,
+          workTitle: payment.workTitle,
+          paymentType: 'installment',
+          totalAmount: payment.totalAmount,
+          paidAmount: newInstallmentAmount, // Actual amount received
+          paymentDate: Timestamp.fromDate(new Date(installmentForm.paymentDate)),
+          paymentMode: installmentForm.paymentMode,
+          notes: installmentForm.notes,
+          installmentId: newInstallment.id,
+          createdAt: Timestamp.now(),
+          createdBy: 'Admin' // You can get this from auth context
+        });
+        console.log('Installment payment tracked in Dashboard:', newInstallmentAmount);
+      } catch (globalPaymentError) {
+        console.error('Error adding to global Payments collection:', globalPaymentError);
+        // Don't fail the main operation if global collection fails
+      }
       
       setPayments(updatedPayments);
       setInstallmentForm({

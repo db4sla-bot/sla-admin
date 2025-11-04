@@ -20,7 +20,8 @@ const Dashboard = () => {
     payroll: [],
     materialsInvestment: [],
     dailyExpenses: [],
-    assetInvestment: [] // Add asset investment
+    assetInvestment: [], // Add asset investment
+    monthlyExpenses: [] // Add monthly expenses
   })
   
   // Filter states
@@ -49,62 +50,80 @@ const Dashboard = () => {
     try {
       console.log('Fetching dashboard data...') // Debug log
       
-      // Fetch all collections in parallel with error handling
+      // Define collection fetch functions with better error handling
+      const fetchCollection = async (collectionName, defaultDocs = []) => {
+        try {
+          const snapshot = await getDocs(collection(db, collectionName))
+          return snapshot
+        } catch (error) {
+          console.warn(`Failed to fetch ${collectionName}:`, error.message)
+          return { docs: defaultDocs }
+        }
+      }
+
+      // Fetch all collections in parallel with improved error handling
       const promises = [
-        getDocs(collection(db, 'Customers')).catch(() => ({ docs: [] })),
-        getDocs(collection(db, 'Materials')).catch(() => ({ docs: [] })),
-        getDocs(collection(db, 'Payments')).catch(() => ({ docs: [] })),
-        getDocs(collection(db, 'Payroll')).catch(() => ({ docs: [] })),
-        getDocs(collection(db, 'MaterialsInvestment')).catch(() => ({ docs: [] })),
-        getDocs(collection(db, 'DailyExpenses')).catch(() => ({ docs: [] })),
-        getDocs(collection(db, 'AssetInvestment')).catch(() => ({ docs: [] })) // Add this
+        fetchCollection('Customers'),
+        fetchCollection('Materials'),
+        fetchCollection('Payments'),
+        fetchCollection('Payroll'),
+        fetchCollection('MaterialsInvestment'),
+        fetchCollection('DailyExpenses'),
+        fetchCollection('AssetInvestment'),
+        fetchCollection('monthlyExpenses') // Monthly expenses collection
       ]
       
-      const [customers, materials, payments, payroll, materialsInvestment, dailyExpenses, assetInvestment] = await Promise.all(promises)
+      const [customers, materials, payments, payroll, materialsInvestment, dailyExpenses, assetInvestment, monthlyExpenses] = await Promise.all(promises)
 
-      console.log('Data fetched:', { 
+      console.log('Data fetched successfully:', { 
         customers: customers.docs.length, 
         materials: materials.docs.length, 
         payments: payments.docs.length,
         payroll: payroll.docs.length,
         materialsInvestment: materialsInvestment.docs.length,
         dailyExpenses: dailyExpenses.docs.length,
-        assetInvestment: assetInvestment.docs.length // Add this
-      }) // Debug log
+        assetInvestment: assetInvestment.docs.length,
+        monthlyExpenses: monthlyExpenses.docs.length
+      })
+
+      // Process data with better error handling for date conversion
+      const safeDocMap = (docs, dateField, fallbackDate = Date.now()) => {
+        return docs.map(doc => {
+          try {
+            const data = doc.data()
+            const processedData = { id: doc.id, ...data }
+            
+            if (dateField && data[dateField]) {
+              processedData[dateField] = data[dateField]?.toDate?.() || new Date(data[dateField] || fallbackDate)
+            }
+            
+            return processedData
+          } catch (error) {
+            console.warn(`Error processing document ${doc.id}:`, error)
+            return { id: doc.id, ...doc.data() }
+          }
+        })
+      }
+
+      // Use only global payments collection to avoid double counting
+      // Customer installments are now properly saved to global Payments collection
+      const globalPayments = safeDocMap(payments.docs, 'paymentDate')
 
       const dashboardDataNew = {
-        customers: customers.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-        materials: materials.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-        payments: payments.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          paymentDate: doc.data().paymentDate?.toDate?.() || new Date(doc.data().createdDate || Date.now())
-        })),
-        payroll: payroll.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          paymentDate: doc.data().paymentDate?.toDate?.() || new Date(doc.data().paymentDate || Date.now())
-        })),
-        materialsInvestment: materialsInvestment.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate?.() || new Date(doc.data().createdDate || Date.now())
-        })),
-        dailyExpenses: dailyExpenses.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          expenseDate: doc.data().expenseDate?.toDate?.() || new Date(doc.data().createdDate || Date.now())
-        })),
-        assetInvestment: assetInvestment.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate?.() || new Date(doc.data().createdDate || Date.now())
-        }))
+        customers: safeDocMap(customers.docs),
+        materials: safeDocMap(materials.docs),
+        payments: globalPayments, // Only use global payments to prevent double counting
+        payroll: safeDocMap(payroll.docs, 'paymentDate'),
+        materialsInvestment: safeDocMap(materialsInvestment.docs, 'createdAt'),
+        dailyExpenses: safeDocMap(dailyExpenses.docs, 'expenseDate'),
+        assetInvestment: safeDocMap(assetInvestment.docs, 'createdAt'),
+        monthlyExpenses: safeDocMap(monthlyExpenses.docs, 'createdAt')
       }
       
       setDashboardData(dashboardDataNew)
     } catch (error) {
-      console.error('Error fetching dashboard data:', error)
+      console.error('Critical error fetching dashboard data:', error)
+      // Set empty data but don't crash the app
       setDashboardData({
         customers: [],
         materials: [],
@@ -112,7 +131,8 @@ const Dashboard = () => {
         payroll: [],
         materialsInvestment: [],
         dailyExpenses: [],
-        assetInvestment: []
+        assetInvestment: [],
+        monthlyExpenses: []
       })
     }
     setLoading(false)
@@ -148,37 +168,47 @@ const Dashboard = () => {
   }
 
   const filterDataByPeriod = () => {
-    const dateRange = getDateRange(activeFilter)
-    
-    const filtered = {
-      payments: dashboardData.payments ? dashboardData.payments.filter(payment => {
-        if (!dateRange) return true
-        const date = new Date(payment.paymentDate)
-        return date >= dateRange.start && date <= dateRange.end
-      }) : [],
-      payroll: dashboardData.payroll ? dashboardData.payroll.filter(payroll => {
-        if (!dateRange) return true
-        const date = new Date(payroll.paymentDate)
-        return date >= dateRange.start && date <= dateRange.end
-      }) : [],
-      materialsInvestment: dashboardData.materialsInvestment ? dashboardData.materialsInvestment.filter(investment => {
-        if (!dateRange) return true
-        const date = new Date(investment.createdAt)
-        return date >= dateRange.start && date <= dateRange.end
-      }) : [],
-      dailyExpenses: dashboardData.dailyExpenses ? dashboardData.dailyExpenses.filter(expense => {
-        if (!dateRange) return true
-        const date = new Date(expense.expenseDate)
-        return date >= dateRange.start && date <= dateRange.end
-      }) : [],
-      assetInvestment: dashboardData.assetInvestment ? dashboardData.assetInvestment.filter(asset => {
-        if (!dateRange) return true
-        const date = new Date(asset.createdAt)
-        return date >= dateRange.start && date <= dateRange.end
-      }) : []
+    try {
+      const dateRange = getDateRange(activeFilter)
+      
+      const safeFilter = (dataArray, dateField) => {
+        if (!Array.isArray(dataArray)) return []
+        
+        return dataArray.filter(item => {
+          try {
+            if (!dateRange) return true
+            const date = new Date(item[dateField])
+            if (isNaN(date.getTime())) return true // Include items with invalid dates
+            return date >= dateRange.start && date <= dateRange.end
+          } catch (error) {
+            console.warn('Error filtering item:', error)
+            return true // Include items that cause errors
+          }
+        })
+      }
+      
+      const filtered = {
+        payments: safeFilter(dashboardData.payments || [], 'paymentDate'),
+        payroll: safeFilter(dashboardData.payroll || [], 'paymentDate'),
+        materialsInvestment: safeFilter(dashboardData.materialsInvestment || [], 'createdAt'),
+        dailyExpenses: safeFilter(dashboardData.dailyExpenses || [], 'expenseDate'),
+        assetInvestment: safeFilter(dashboardData.assetInvestment || [], 'createdAt'),
+        monthlyExpenses: safeFilter(dashboardData.monthlyExpenses || [], 'createdAt')
+      }
+      
+      setFilteredData(filtered)
+    } catch (error) {
+      console.error('Error filtering data:', error)
+      // Set empty filtered data as fallback
+      setFilteredData({
+        payments: [],
+        payroll: [],
+        materialsInvestment: [],
+        dailyExpenses: [],
+        assetInvestment: [],
+        monthlyExpenses: []
+      })
     }
-    
-    setFilteredData(filtered)
   }
 
   const calculateFinancials = () => {
@@ -193,6 +223,7 @@ const Dashboard = () => {
         materialExpenses: 0,
         dailyExpensesAmount: 0,
         assetInvestmentAmount: 0, // Add this
+        monthlyExpensesAmount: 0, // Add monthly expenses
         revenueGrowth: 0,
         expenseGrowth: 0
       }
@@ -203,8 +234,9 @@ const Dashboard = () => {
     const materialExpenses = (filteredData.materialsInvestment || []).reduce((sum, investment) => sum + (investment.amount || 0), 0)
     const dailyExpensesAmount = (filteredData.dailyExpenses || []).reduce((sum, expense) => sum + (expense.amount || 0), 0)
     const assetInvestmentAmount = (filteredData.assetInvestment || []).reduce((sum, asset) => sum + (asset.amount || 0), 0) // Add this
+    const monthlyExpensesAmount = (filteredData.monthlyExpenses || []).reduce((sum, expense) => sum + (Number(expense.expenseAmount) || 0), 0) // Add monthly expenses
     
-    const totalExpenses = payrollExpenses + materialExpenses + dailyExpensesAmount + assetInvestmentAmount // Include asset investment
+    const totalExpenses = payrollExpenses + materialExpenses + dailyExpensesAmount + assetInvestmentAmount + monthlyExpensesAmount // Include all expenses
     const profit = revenue - totalExpenses
     const profitMargin = revenue > 0 ? (profit / revenue) * 100 : 0
     
@@ -221,6 +253,7 @@ const Dashboard = () => {
       materialExpenses,
       dailyExpensesAmount,
       assetInvestmentAmount, // Add this
+      monthlyExpensesAmount, // Add monthly expenses
       revenueGrowth,
       expenseGrowth
     }
@@ -264,7 +297,13 @@ const Dashboard = () => {
           const date = new Date(p.createdAt)
           return date >= monthStart && date <= monthEnd
         })
-        .reduce((sum, p) => sum + (p.amount || 0), 0) // Add this
+        .reduce((sum, p) => sum + (p.amount || 0), 0) +
+        dashboardData.monthlyExpenses
+        .filter(p => {
+          const date = new Date(p.expenseDate)
+          return date >= monthStart && date <= monthEnd
+        })
+        .reduce((sum, p) => sum + (Number(p.expenseAmount) || 0), 0) // Add monthly expenses
       
       return {
         month,
