@@ -74,9 +74,10 @@
 
 .add-material-form {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 24px;
     margin-bottom: 32px;
+    max-width: 900px;
 }
 
 .add-material-form-group {
@@ -137,6 +138,14 @@
 
 .add-material-price-input .add-material-form-input {
     padding-left: 40px;
+}
+
+/* Read-only field styling */
+.add-material-readonly {
+    background-color: #f8fafc !important;
+    color: #64748b !important;
+    cursor: not-allowed !important;
+    border-color: #e2e8f0 !important;
 }
 
 /* Validation States */

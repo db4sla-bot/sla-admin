@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import './AddMaterial.css'
 import Hamburger from '../../Components/Hamburger/Hamburger'
-import { Package, DollarSign, Hash, Shield, CheckCircle, AlertCircle } from 'lucide-react'
+import { Package, Hash, Shield, CheckCircle, AlertCircle, DollarSign } from 'lucide-react'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { db } from '../../Firebase'
@@ -12,16 +12,22 @@ const AddMaterial = () => {
     const [showSuccess, setShowSuccess] = useState(false)
     const [formData, setFormData] = useState({
         name: '',
+        id: '',
         price: '',
-        quantity: '',
         bufferStock: ''
     })
     const [validation, setValidation] = useState({
         name: { isValid: null, message: '' },
         price: { isValid: null, message: '' },
-        quantity: { isValid: null, message: '' },
         bufferStock: { isValid: null, message: '' }
     })
+
+    // Auto-generate ID based on material name
+    const generateMaterialId = (materialName) => {
+        const cleanName = materialName.trim().toUpperCase().replace(/[^A-Z0-9]/g, '_')
+        const timestamp = Date.now().toString().slice(-4)
+        return `MAT_${cleanName}_${timestamp}`
+    }
 
     const validateField = (name, value) => {
         let isValid = false
@@ -53,29 +59,12 @@ const AddMaterial = () => {
                 }
                 break
 
-            case 'quantity':
-                const qty = Number(value)
-                if (!value) {
-                    message = 'Quantity is required'
-                } else if (isNaN(qty) || qty <= 0) {
-                    message = 'Quantity must be a positive number'
-                } else if (qty > 999999) {
-                    message = 'Quantity seems too high'
-                } else {
-                    isValid = true
-                    message = 'Quantity is valid'
-                }
-                break
-
             case 'bufferStock':
                 const buffer = Number(value)
-                const quantity = Number(formData.quantity)
                 if (!value) {
                     message = 'Buffer stock is required'
                 } else if (isNaN(buffer) || buffer < 0) {
                     message = 'Buffer stock must be a positive number'
-                } else if (quantity && buffer >= quantity) {
-                    message = 'Buffer stock should be less than total quantity'
                 } else {
                     isValid = true
                     message = 'Buffer stock is valid'
@@ -97,22 +86,31 @@ const AddMaterial = () => {
     const handleChange = (e) => {
         const { name, value } = e.target
 
-        // Only allow numbers for price, quantity and bufferStock
-        if ((name === 'price' || name === 'quantity' || name === 'bufferStock') && value && isNaN(value)) {
+        // Only allow numbers for price and bufferStock
+        if ((name === 'price' || name === 'bufferStock') && value && isNaN(value)) {
             return
         }
 
-        setFormData((prev) => ({ ...prev, [name]: value }))
+        setFormData((prev) => {
+            const newData = { ...prev, [name]: value }
+            
+            // Auto-generate ID when name changes
+            if (name === 'name' && value.trim()) {
+                newData.id = generateMaterialId(value)
+            }
+            
+            return newData
+        })
         
         // Validate field on change
         setTimeout(() => validateField(name, value), 100)
     }
 
-    const checkMaterialExists = async (materialName) => {
+    const checkMaterialExists = async (materialId) => {
         try {
             const q = query(
                 collection(db, 'Materials'), 
-                where('name', '==', materialName.trim())
+                where('id', '==', materialId.trim())
             )
             const querySnapshot = await getDocs(q)
             return !querySnapshot.empty
@@ -126,10 +124,9 @@ const AddMaterial = () => {
         // Validate all fields
         const nameValid = validateField('name', formData.name)
         const priceValid = validateField('price', formData.price)
-        const quantityValid = validateField('quantity', formData.quantity)
         const bufferValid = validateField('bufferStock', formData.bufferStock)
 
-        if (!nameValid || !priceValid || !quantityValid || !bufferValid) {
+        if (!nameValid || !priceValid || !bufferValid) {
             toast.error('Please fix all validation errors before saving!')
             return
         }
@@ -138,24 +135,21 @@ const AddMaterial = () => {
 
         try {
             // Check if material already exists
-            const materialExists = await checkMaterialExists(formData.name)
+            const materialExists = await checkMaterialExists(formData.id)
             if (materialExists) {
-                toast.error(`Material "${formData.name}" already exists!`)
+                toast.error(`Material with ID "${formData.id}" already exists!`)
                 setLoading(false)
                 return
             }
 
-            // Use Material Name as document ID (cleaned)
-            const materialId = formData.name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')
+            // Use the auto-generated ID as document ID
+            const materialId = formData.id.trim()
             
             await setDoc(doc(db, 'Materials', materialId), {
                 name: formData.name.trim(),
+                id: formData.id.trim(),
                 price: Number(formData.price),
-                quantity: Number(formData.quantity),
                 bufferStock: Number(formData.bufferStock),
-                remaining: Number(formData.quantity), // Initially, remaining = quantity
-                status: 'Available',
-                statusColor: '#17c666',
                 createdAt: serverTimestamp(),
                 createdBy: 'Admin', // You can get this from user context
                 lastUpdated: serverTimestamp()
@@ -166,11 +160,10 @@ const AddMaterial = () => {
             
             // Reset form and validation after 2 seconds
             setTimeout(() => {
-                setFormData({ name: '', price: '', quantity: '', bufferStock: '' })
+                setFormData({ name: '', id: '', price: '', bufferStock: '' })
                 setValidation({
                     name: { isValid: null, message: '' },
                     price: { isValid: null, message: '' },
-                    quantity: { isValid: null, message: '' },
                     bufferStock: { isValid: null, message: '' }
                 })
                 setShowSuccess(false)
@@ -184,11 +177,10 @@ const AddMaterial = () => {
     }
 
     const handleReset = () => {
-        setFormData({ name: '', price: '', quantity: '', bufferStock: '' })
+        setFormData({ name: '', id: '', price: '', bufferStock: '' })
         setValidation({
             name: { isValid: null, message: '' },
             price: { isValid: null, message: '' },
-            quantity: { isValid: null, message: '' },
             bufferStock: { isValid: null, message: '' }
         })
         setShowSuccess(false)
@@ -197,11 +189,9 @@ const AddMaterial = () => {
     const isFormValid = () => {
         return validation.name.isValid && 
                validation.price.isValid && 
-               validation.quantity.isValid && 
                validation.bufferStock.isValid &&
                formData.name.trim() &&
                formData.price &&
-               formData.quantity &&
                formData.bufferStock
     }
 
@@ -223,7 +213,7 @@ const AddMaterial = () => {
                         <div className="add-material-header-info">
                             <h1 className="add-material-page-title">Add New Material</h1>
                             <p className="add-material-page-subtitle">
-                                Add materials to your inventory with pricing and quantity tracking
+                                Add materials with name, pricing and buffer stock information
                             </p>
                         </div>
                         <div className="add-material-header-icon">
@@ -273,6 +263,26 @@ const AddMaterial = () => {
                                 </div>
                             </div>
 
+                            {/* Material ID (Auto-generated) */}
+                            <div className="add-material-form-group">
+                                <label className="add-material-form-label">
+                                    <Hash className="material-icon" />
+                                    Material ID (Auto-generated)
+                                </label>
+                                <input
+                                    type="text"
+                                    className="add-material-form-input add-material-readonly"
+                                    placeholder="ID will be auto-generated based on material name"
+                                    name="id"
+                                    value={formData.id}
+                                    readOnly
+                                    disabled
+                                />
+                                <div className="add-material-helper-text">
+                                    Unique identifier automatically generated from material name
+                                </div>
+                            </div>
+
                             {/* Material Price */}
                             <div className="add-material-form-group">
                                 <label className="add-material-form-label">
@@ -308,38 +318,6 @@ const AddMaterial = () => {
                                 </div>
                             </div>
 
-                            {/* Total Quantity */}
-                            <div className="add-material-form-group">
-                                <label className="add-material-form-label">
-                                    <Hash className="material-icon" />
-                                    Total Quantity
-                                </label>
-                                <input
-                                    type="number"
-                                    className={`add-material-form-input ${
-                                        validation.quantity.isValid === true ? 'success' : 
-                                        validation.quantity.isValid === false ? 'error' : ''
-                                    }`}
-                                    placeholder="Enter total quantity (e.g., 100)"
-                                    name="quantity"
-                                    value={formData.quantity}
-                                    onChange={handleChange}
-                                    min="1"
-                                    autoComplete="off"
-                                />
-                                {validation.quantity.message && (
-                                    <div className={`add-material-validation-message ${
-                                        validation.quantity.isValid ? 'success' : 'error'
-                                    }`}>
-                                        {validation.quantity.isValid ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-                                        {validation.quantity.message}
-                                    </div>
-                                )}
-                                <div className="add-material-helper-text">
-                                    Total quantity available in your inventory
-                                </div>
-                            </div>
-
                             {/* Buffer Stock */}
                             <div className="add-material-form-group">
                                 <label className="add-material-form-label">
@@ -368,7 +346,7 @@ const AddMaterial = () => {
                                     </div>
                                 )}
                                 <div className="add-material-helper-text">
-                                    Minimum quantity to maintain - alerts when stock goes below this
+                                    Minimum buffer stock quantity to maintain
                                 </div>
                             </div>
                         </div>
