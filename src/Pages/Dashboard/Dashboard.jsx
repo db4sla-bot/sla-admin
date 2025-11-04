@@ -477,6 +477,10 @@ const Dashboard = () => {
                   <span className="dashboard-expense-amount">₹{financials.dailyExpensesAmount.toLocaleString()}</span>
                 </div>
                 <div className="dashboard-expense-item">
+                  <span className="dashboard-expense-label">📅 Monthly Expenses:</span>
+                  <span className="dashboard-expense-amount">₹{financials.monthlyExpensesAmount.toLocaleString()}</span>
+                </div>
+                <div className="dashboard-expense-item">
                   <span className="dashboard-expense-label">🏢 Assets:</span>
                   <span className="dashboard-expense-amount">₹{financials.assetInvestmentAmount.toLocaleString()}</span>
                 </div>
